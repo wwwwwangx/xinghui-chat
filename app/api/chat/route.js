@@ -11,38 +11,28 @@ export async function POST(req) {
       );
     }
 
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    const model = process.env.DEFAULT_MODEL || "anthropic/claude-sonnet-4.5";
+    const gatewayUrl =
+      "https://passionate-tenderness-production-b0a8.up.railway.app/v1/chat/completions";
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Missing OPENROUTER_API_KEY in environment variables" },
-        { status: 500 }
-      );
-    }
+    const response = await fetch(gatewayUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-3.5-sonnet",
+        messages: [
+          {
+            role: "user",
+            content: message,
+          },
+        ],
+      }),
+    });
 
-    const res = await fetch(
-      "/api/chat",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-         },
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: "user",
-              content: message,
-            },
-          ],
-        }),
-      }
-    );
+    const data = await response.json();
 
-    const data = await res.json();
-
-    return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(data, { status: response.status });
   } catch (err) {
     return NextResponse.json(
       { error: err.message || "Unknown error" },
