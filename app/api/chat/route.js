@@ -12,7 +12,7 @@ export async function POST(req) {
     }
 
     const gatewayUrl =
-      "https://passionate-tenderness-production-b0a8.up.railway.app/v1/chat/completions";
+      "https://wangxandxing.zeabur.app/v1/chat/completions";
 
     const response = await fetch(gatewayUrl, {
       method: "POST",
