@@ -11,16 +11,26 @@ export async function POST(req) {
       );
     }
 
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    const model = process.env.DEFAULT_MODEL || "anthropic/claude-sonnet-4.5";
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Missing OPENROUTER_API_KEY in environment variables" },
+        { status: 500 }
+      );
+    }
+
     const res = await fetch(
       "https://wangxandxing.zeabur.app/v1/chat/completions",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer sk-123",
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "anthropic/claude-sonnet-4.5",
+          model,
           messages: [
             {
               role: "user",
@@ -33,22 +43,10 @@ export async function POST(req) {
 
     const data = await res.json();
 
-    if (!res.ok) {
-      return NextResponse.json(
-        {
-          error: data?.error || "Gateway request failed",
-          detail: data,
-        },
-        { status: res.status }
-      );
-    }
-
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status: res.status });
   } catch (err) {
     return NextResponse.json(
-      {
-        error: err.message || "Unknown error",
-      },
+      { error: err.message || "Unknown error" },
       { status: 500 }
     );
   }
