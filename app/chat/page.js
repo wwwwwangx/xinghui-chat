@@ -138,11 +138,19 @@ export default function ChatPage() {
       body: JSON.stringify({ message: text }),
     });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    const aiText =
-      data?.choices?.[0]?.message?.content ||
-      data?.reply ||
+     const rawContent = data?.choices?.[0]?.message?.content;
+
+     const aiText =
+      typeof rawContent === "string"
+    ? rawContent
+    : Array.isArray(rawContent)
+    ? rawContent.map((item) => item?.text || item?.content || "").join("")
+    : data?.reply ||
+      data?.message ||
+      data?.content ||
+      JSON.stringify(data) ||
       "（AI没有返回内容）";
 
     const aiMessage = {
