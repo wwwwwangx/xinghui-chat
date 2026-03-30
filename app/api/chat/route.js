@@ -22,7 +22,7 @@ export async function POST(req) {
     }
 
     const res = await fetch(
-      "https://passionate-tenderness-production-b0a8.up.railway.app/",
+      "https://passionate-tenderness-production-b0a8.up.railway.app/v1/chat/completions",
       {
         method: "POST",
         headers: {
