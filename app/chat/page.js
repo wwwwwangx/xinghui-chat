@@ -112,24 +112,66 @@ export default function ChatPage() {
     return res.json();
   };
 
-  const sendMessage = () => {
-    const text = input.trim();
-    if (!text) return;
+ const sendMessage = async () => {
+  const text = input.trim();
+  if (!text) return;
 
-    const newMessage = {
-      id: `m-${Date.now()}`,
+  const userMessage = {
+    id: `m-${Date.now()}`,
+    type: "message",
+    role: "me",
+    avatar: "我",
+    text,
+    time: getCurrentTime(),
+    read: true,
+  };
+
+  setMessages((prev) => [...prev, userMessage]);
+  setInput("");
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: text }),
+    });
+
+    const data = await res.json();
+
+    const aiText =
+      data?.choices?.[0]?.message?.content ||
+      data?.reply ||
+      "（AI没有返回内容）";
+
+    const aiMessage = {
+      id: `m-${Date.now()}-ai`,
       type: "message",
-      role: "me",
-      avatar: "我",
-      text,
+      role: "other",
+      avatar: "星",
+      text: aiText,
       time: getCurrentTime(),
       read: true,
     };
 
-    setMessages((prev) => [...prev, newMessage]);
-    setInput("");
-    setShowEmojiPanel(false);
-  };
+    setMessages((prev) => [...prev, aiMessage]);
+  } catch (err) {
+    console.error(err);
+
+    const errorMessage = {
+      id: `m-${Date.now()}-err`,
+      type: "message",
+      role: "other",
+      avatar: "系统",
+      text: "出错了，稍后再试",
+      time: getCurrentTime(),
+      read: true,
+    };
+
+    setMessages((prev) => [...prev, errorMessage]);
+   }
+   };
 
   const handleImageSelect = async (file, source = "照片") => {
     if (!file) return;
