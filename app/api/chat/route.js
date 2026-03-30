@@ -22,13 +22,12 @@ export async function POST(req) {
     }
 
     const res = await fetch(
-      "https://passionate-tenderness-production-b0a8.up.railway.app/v1/chat/completions",
+      "/api/chat",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
+         },
         body: JSON.stringify({
           model,
           messages: [
