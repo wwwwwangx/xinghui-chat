@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
 function splitAssistantReply(text) {
-  if (!text) return [];
+if (!text) return [];
 
-  return text
-    .split(/\n+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+return text
+  .split(/(?<=[。！？.!?])/)
+  .map((s) => s.trim())
+  .filter(Boolean);
 }
 
 export async function POST(req) {
