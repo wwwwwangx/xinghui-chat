@@ -1229,8 +1229,9 @@ return (
     }}
     style={{
       fontSize: "12px",
-      color: "rgba(120,120,120,0.6)",
+      color: "rgba(120,120,120,0.45)",
       marginBottom: "4px",
+      lineHeight: 1.2,
       paddingLeft: "6px",
       cursor: "pointer",
     }}
@@ -1258,7 +1259,25 @@ return (
                           minWidth: "80px",
                         }}
                       >
-                        
+                        {msg.role === "other" && msg.thoughtSummary && (
+  <div
+    onClick={() => {
+      setActiveThought(
+        msg.thoughtFull || "他刚刚有点话没说出来。"
+      );
+      setShowThoughtDrawer(true);
+    }}
+    style={{
+      fontSize: "12px",
+      color: "rgba(120,120,120,0.6)",
+      marginBottom: "4px",
+      cursor: "pointer",
+    }}
+  >
+    □ {msg.thoughtSummary}
+  </div>
+)}
+
                      
                         {msg.text}
                       </div>
