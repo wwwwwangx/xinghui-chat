@@ -11,6 +11,8 @@ export default function ChatPage() {
   const [activeMessage, setActiveMessage] = useState(null);
   const [showMessageMenu, setShowMessageMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [showThoughtDrawer, setShowThoughtDrawer] = useState(false);
+  const [activeThought, setActiveThought] = useState("");
 
   const chatEndRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -1281,17 +1283,21 @@ return (
                         }}
                       >
                       {msg.role === "other" && (
-                       <div
-                        style={{
-                        fontSize: "12px",
-                        color: "rgba(120,120,120,0.6)",
-                        marginBottom: "4px",
-                        paddingLeft: "6px",
+                      <div
+                      onClick={() => {
+                      setActiveThought("他刚刚在想，要怎么回你才既自然，又不显得敷衍。");
+                     setShowThoughtDrawer(true);
+                    }}
+                    style={{
+                      fontSize: "12px",
+                   color: "rgba(120,120,120,0.6)",
+                    marginBottom: "4px",
+                      paddingLeft: "6px",
                        cursor: "pointer",
                         }}
                         >
-                       🩶 他刚刚好像在想点什么
-                         </div>
+                                       🩶 他刚刚好像在想点什么
+                        </div>
                        )}
                         {msg.text}
                       </div>
@@ -1797,6 +1803,69 @@ return (
           </div>
         )}
       </div>
+      {showThoughtDrawer && (
+  <>
+    <div
+      onClick={() => setShowThoughtDrawer(false)}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.22)",
+        zIndex: 999,
+      }}
+    />
+
+    <div
+      style={{
+        position: "fixed",
+        left: "50%",
+        bottom: 0,
+        transform: "translateX(-50%)",
+        width: "100%",
+        maxWidth: "430px",
+        background: "#fff",
+        borderTopLeftRadius: "18px",
+        borderTopRightRadius: "18px",
+        padding: "14px 16px 24px",
+        boxShadow: "0 -8px 30px rgba(0,0,0,0.12)",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          width: "42px",
+          height: "4px",
+          borderRadius: "999px",
+          background: "rgba(0,0,0,0.12)",
+          margin: "0 auto 12px",
+        }}
+      />
+
+      <div
+        style={{
+          fontSize: "13px",
+          color: "rgba(120,120,120,0.9)",
+          marginBottom: "10px",
+        }}
+      >
+        🩶 他刚刚在想什么
+      </div>
+
+      <div
+        style={{
+          fontSize: "14px",
+          lineHeight: 1.6,
+          color: "#333",
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {activeThought}
+      </div>
+    </div>
+  </>
+)}
+
+
     </div>
   );
 }
