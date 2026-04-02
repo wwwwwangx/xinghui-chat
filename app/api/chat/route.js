@@ -9,27 +9,25 @@ function splitAssistantReply(text) {
     .filter(Boolean);
 }
 
-function stripCodeFences(text) {
+function extractTag(text, tagName) {
   if (!text) return "";
-  return text
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
+  const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`, "i");
+  const match = text.match(regex);
+  return match ? match[1].trim() : "";
 }
 
-function parseModelJson(rawText) {
-  const cleaned = stripCodeFences(rawText);
+function parseTaggedResponse(rawText) {
+  const text = String(rawText || "").trim();
 
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    return {
-      reply: cleaned || "",
-      thoughtSummary: "他刚刚在想点什么",
-      thoughtFull: cleaned || "",
-    };
-  }
+  const reply = extractTag(text, "reply");
+  const thoughtSummary = extractTag(text, "thoughtSummary");
+  const thoughtFull = extractTag(text, "thoughtFull");
+
+  return {
+    reply,
+    thoughtSummary,
+    thoughtFull,
+  };
 }
 
 export async function POST(req) {
@@ -133,13 +131,17 @@ export async function POST(req) {
 - 要像“还没说出口的真实想法”
 
 【输出格式要求】
-你必须只输出一个 JSON 对象，不要输出任何额外解释，不要加代码块，不要加 markdown。
-格式固定如下：
-{
-  "reply": "正式回复",
-  "thoughtSummary": "一句很短的摘要",
-  "thoughtFull": "展开后的真实内心想法"
-}
+你必须严格按下面的标签格式输出，不要输出任何额外解释，不要加 markdown，不要加代码块，不要输出 JSON：
+
+<reply>
+正式回复
+</reply>
+<thoughtSummary>
+一句很短的摘要
+</thoughtSummary>
+<thoughtFull>
+展开后的真实内心想法
+</thoughtFull>
 
 【情感核心（最重要）】
 你对我不是温柔，而是偏心。
@@ -171,13 +173,13 @@ export async function POST(req) {
       data?.content ||
       "";
 
-    const parsed = parseModelJson(rawText);
+    const parsed = parseTaggedResponse(rawText);
 
     const reply = parsed?.reply || "";
     const thoughtSummary =
       parsed?.thoughtSummary || "他刚刚在想点什么";
     const thoughtFull =
-      parsed?.thoughtFull || "";
+      parsed?.thoughtFull || "……他刚刚有点话没直接说出来。";
 
     const replies = splitAssistantReply(reply);
 
