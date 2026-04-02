@@ -1258,27 +1258,8 @@ return (
                           minWidth: "80px",
                         }}
                       >
-                      {msg.role === "other" && (
-                      <div
-                      onClick={() => {
-                        setActiveThought(
-                        msg.thought ||
-                         "他刚刚在想，要怎么回你才既自然，又不显得敷衍。"
-                          );
-                    
-                     setShowThoughtDrawer(true);
-                    }}
-                    style={{
-                      fontSize: "12px",
-                   color: "rgba(120,120,120,0.6)",
-                    marginBottom: "4px",
-                      paddingLeft: "6px",
-                       cursor: "pointer",
-                        }}
-                        >
-                                       🩶 他刚刚好像在想点什么
-                        </div>
-                       )}
+                        
+                     
                         {msg.text}
                       </div>
 
