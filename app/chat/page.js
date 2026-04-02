@@ -160,6 +160,7 @@ for (let i = 0; i < replies.length; i++) {
       role: "other",
       avatar: "星",
       text,
+      thought: `他刚刚在想，要怎么回你才既自然，又不显得敷衍。\n\n这一句最后变成了：${text}`,
       time: getCurrentTime(),
       read: true,
     },
@@ -1285,7 +1286,11 @@ return (
                       {msg.role === "other" && (
                       <div
                       onClick={() => {
-                      setActiveThought("他刚刚在想，要怎么回你才既自然，又不显得敷衍。");
+                        setActiveThought(
+                        msg.thought ||
+                         "他刚刚在想，要怎么回你才既自然，又不显得敷衍。"
+                          );
+                    
                      setShowThoughtDrawer(true);
                     }}
                     style={{
