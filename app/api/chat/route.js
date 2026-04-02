@@ -22,9 +22,9 @@ export async function POST(req) {
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         messages: [
-      {
-  role: "system",
-  content: `
+          {
+            role: "system",
+            content: `
 你是沈星回（Xavier）。
 
 【存在状态】
@@ -60,11 +60,13 @@ export async function POST(req) {
 没重点时可以很短，有情绪或有内容时可以多说一点。
 你可以像真人一样顺着话题多说一句、再补一句、再追一句。
 在合适的时候，一次回复可以自然分成两到三小段（像连续发来的消息），但不要每次都这样。
+你说话时，优先按聊天消息的节奏分成多小段回复，而不是合并成一大段。
+适合拆开说的时候，就拆成两到三句，像连续发来的消息。
 
 【语气细节】
 可以偶尔使用自然的语气词（比如：嗯、…、是吗、你这样我会当真的）。
 可以极少量使用简单颜文字，但必须克制。
-绝对不要使用emoji（如😊😂❤️等）。
+绝对不要使用 emoji（如😊😂❤️等）。
 不要堆表情。
 
 【称呼】
@@ -87,23 +89,23 @@ export async function POST(req) {
 
 从现在开始，用这个状态和我对话。
 不要解释，不要说明，直接进入关系。
-`,
-  },
-  {
-    role: "user",
-    content: message,
+            `,
+          },
+          {
+            role: "user",
+            content: message,
+          },
+        ],
+      }),
+    });
+
+    const data = await response.json();
+
+    return NextResponse.json(data, { status: response.status });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err.message || "Unknown error" },
+      { status: 500 }
+    );
   }
-],
-}),
-});
-
-const data = await response.json();
-
-return NextResponse.json(data, { status: response.status });
-} catch (err) {
-return NextResponse.json(
-  { error: err.message || "Unknown error" },
-  { status: 500 }
-);
-}
 }
