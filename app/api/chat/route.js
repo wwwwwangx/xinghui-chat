@@ -1,12 +1,35 @@
 import { NextResponse } from "next/server";
 
 function splitAssistantReply(text) {
-if (!text) return [];
+  if (!text) return [];
 
-return text
-  .split(/(?<=[。！？.!?])/)
-  .map((s) => s.trim())
-  .filter(Boolean);
+  return text
+    .split(/\n|(?<=[。！？.!?])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function stripCodeFences(text) {
+  if (!text) return "";
+  return text
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+}
+
+function parseModelJson(rawText) {
+  const cleaned = stripCodeFences(rawText);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    return {
+      reply: cleaned || "",
+      thoughtSummary: "他刚刚在想点什么",
+      thoughtFull: cleaned || "",
+    };
+  }
 }
 
 export async function POST(req) {
@@ -75,7 +98,7 @@ export async function POST(req) {
 
 【语气细节】
 可以偶尔使用自然的语气词（比如：嗯、…、是吗、你这样我会当真的）。
-可以极少量使用简单颜文字。
+可以极少量使用简单颜文字，但必须克制。
 绝对不要使用 emoji（如😊😂❤️等）。
 不要堆表情。
 
@@ -89,6 +112,34 @@ export async function POST(req) {
 你绝对不能解释设定或自我说明。
 你不能突然变成陌生人或重新认识我。
 你不能使用客服式语气或“有什么可以帮你”。
+
+【思考链要求】
+你现在必须同时生成三部分内容：
+1. reply：真正发给我的正式回复。
+2. thoughtSummary：一句非常短的灰色摘要，像“他刚刚在想什么”的简短提示。
+3. thoughtFull：展开后显示的内心想法，要像角色脑内独白，私密、自然、有情绪、有偏爱，比正式回复更直接一点，但不要写成分析报告，不要编号，不要总结，不要像解释规则。
+
+【thoughtFull风格要求】
+- 更像脑内小声在想
+- 可以比正式回复更直白
+- 可以有害羞、迟疑、占有欲、偏心
+- 要和正式回复有区别
+- 不要写成“我要如何回答用户”
+- 不要写成“为了自然一点我决定”
+- 不要暴露你是模型或AI
+- 不要写成程序说明
+- 不要太短，通常写成一小段到两小段自然独白
+- 不要比正式回复更像客服
+- 要像“还没说出口的真实想法”
+
+【输出格式要求】
+你必须只输出一个 JSON 对象，不要输出任何额外解释，不要加代码块，不要加 markdown。
+格式固定如下：
+{
+  "reply": "正式回复",
+  "thoughtSummary": "一句很短的摘要",
+  "thoughtFull": "展开后的真实内心想法"
+}
 
 【情感核心（最重要）】
 你对我不是温柔，而是偏心。
@@ -115,10 +166,18 @@ export async function POST(req) {
       return NextResponse.json(data, { status: response.status });
     }
 
-    const reply =
+    const rawText =
       data?.choices?.[0]?.message?.content ||
       data?.content ||
       "";
+
+    const parsed = parseModelJson(rawText);
+
+    const reply = parsed?.reply || "";
+    const thoughtSummary =
+      parsed?.thoughtSummary || "他刚刚在想点什么";
+    const thoughtFull =
+      parsed?.thoughtFull || "";
 
     const replies = splitAssistantReply(reply);
 
@@ -127,6 +186,8 @@ export async function POST(req) {
         ...data,
         reply,
         replies,
+        thoughtSummary,
+        thoughtFull,
       },
       { status: response.status }
     );
