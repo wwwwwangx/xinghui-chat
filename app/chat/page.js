@@ -1358,12 +1358,26 @@ return (
             </div>
 
             <button
-              style={sendBtnStyle}
-              onClick={sendMessage}
-              title="发送"
-            >
-              发送
-            </button>
+  type="button"
+  onClick={sendMessage}
+  style={{
+    height: "34px",
+    borderRadius: "17px",
+    border: "none",
+    background: "#95ec69",
+    color: "#1f1f1f",
+    fontSize: "13px",
+    padding: "0 12px",
+    cursor: "pointer",
+    position: "relative",
+    zIndex: 50,
+    pointerEvents: "auto",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  }}
+>
+  发送
+</button>
           </div>
 
           {showEmojiPanel && (
