@@ -140,22 +140,24 @@ export default function ChatPage() {
 
       const data = await res.json();
 
-     const replies =
-     Array.isArray(data?.replies) && data.replies.length > 0
-     ? data.replies
-     : [data?.reply || ""];
+const replies =
+  Array.isArray(data?.replies) && data.replies.length > 0
+    ? data.replies
+    : [data?.reply || ""];
 
-      for (let i = 0; i < replies.length; i++) {
-     const text = replies[i];
+for (let i = 0; i < replies.length; i++) {
+  const text = replies[i];
 
-      setMessages((prev) => [
-      ...prev,
-     {
-      id: Date.now() + i,
-      role: "assistant",
-      type: "text",
+  setMessages((prev) => [
+    ...prev,
+    {
+      id: `m-${Date.now()}-${i}`,
+      type: "message",
+      role: "other",
+      avatar: "星",
       text,
       time: getCurrentTime(),
+      read: true,
     },
   ]);
 
