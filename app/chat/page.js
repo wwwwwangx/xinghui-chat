@@ -1209,54 +1209,8 @@ return (
                       alignItems: "flex-start",
                     }}
                   >
-                    {msg.thoughtSummary ? (
-                      <button
-                        onClick={() => setOpenThought(msg)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          border: "none",
-                          background: "transparent",
-                          padding: 0,
-                          margin: "0 0 6px 2px",
-                          cursor: "pointer",
-                          color: "rgba(70,70,70,0.62)",
-                          fontSize: "12px",
-                          lineHeight: 1.2,
-                        }}
-                        title="查看思考链"
-                      >
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            color: "rgba(120,120,120,0.68)",
-                          }}
-                        >
-                          🩶
-                        </span>
-                        <span
-                          style={{
-                            maxWidth: "210px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            textAlign: "left",
-                          }}
-                        >
-                          {msg.thoughtSummary}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            color: "rgba(90,90,90,0.6)",
-                          }}
-                        >
-                          ›
-                        </span>
-                      </button>
-                    ) : null}
-
+                    
+                       
                     <div
                       style={{
                         display: "flex",
@@ -1264,6 +1218,26 @@ return (
                         gap: "6px",
                       }}
                     >
+
+                      {msg.role === "other" && msg.thoughtSummary && (
+  <div
+    onClick={() => {
+      setActiveThought(
+       msg.thoughtFull || "他刚刚有点话没说出来。"
+      );
+      setShowThoughtDrawer(true);
+    }}
+    style={{
+      fontSize: "12px",
+      color: "rgba(120,120,120,0.6)",
+      marginBottom: "4px",
+      paddingLeft: "6px",
+      cursor: "pointer",
+    }}
+  >
+    ▫ {msg.thoughtSummary}
+  </div>
+)}
                       <div
                         onContextMenu={(e) => {
                         e.preventDefault();
