@@ -1280,6 +1280,19 @@ return (
                           minWidth: "80px",
                         }}
                       >
+                      {msg.role === "other" && (
+                       <div
+                        style={{
+                        fontSize: "12px",
+                        color: "rgba(120,120,120,0.6)",
+                        marginBottom: "4px",
+                        paddingLeft: "6px",
+                       cursor: "pointer",
+                        }}
+                        >
+                       🩶 他刚刚好像在想点什么
+                         </div>
+                       )}
                         {msg.text}
                       </div>
 
