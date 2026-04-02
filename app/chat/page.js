@@ -140,30 +140,31 @@ export default function ChatPage() {
 
       const data = await res.json();
 
-     const rawContent = data?.choices?.[0]?.message?.content;
+     const replies =
+     Array.isArray(data?.replies) && data.replies.length > 0
+     ? data.replies
+     : [data?.reply || ""];
 
-     const aiText =
-      typeof rawContent === "string"
-    ? rawContent
-    : Array.isArray(rawContent)
-    ? rawContent.map((item) => item?.text || item?.content || "").join("")
-    : data?.reply ||
-      data?.message ||
-      data?.content ||
-      JSON.stringify(data) ||
-      "（AI没有返回内容）";
+      for (let i = 0; i < replies.length; i++) {
+     const text = replies[i];
 
-    const aiMessage = {
-      id: `m-${Date.now()}-ai`,
-      type: "message",
-      role: "other",
-      avatar: "星",
-      text: aiText,
+      setMessages((prev) => [
+      ...prev,
+     {
+      id: Date.now() + i,
+      role: "assistant",
+      type: "text",
+      text,
       time: getCurrentTime(),
-      read: true,
-    };
+    },
+  ]);
 
-    setMessages((prev) => [...prev, aiMessage]);
+  if (i < replies.length - 1) {
+    await new Promise((r) => setTimeout(r, 400));
+  }
+}
+
+     
   } catch (err) {
     console.error(err);
 
