@@ -139,11 +139,11 @@ export default function ChatPage() {
     });
 
       const data = await res.json();
+      const aiText = data?.reply || "";
 
-const replies =
-  Array.isArray(data?.replies) && data.replies.length > 0
-    ? data.replies
-    : [data?.reply || ""];
+const replies = aiText
+  .split(/(?<=[。！？.!?])/)
+  .filter(Boolean);
 
 for (let i = 0; i < replies.length; i++) {
   const text = replies[i];
