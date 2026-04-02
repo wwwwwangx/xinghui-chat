@@ -140,10 +140,12 @@ export default function ChatPage() {
 
       const data = await res.json();
       const aiText = data?.reply || "";
-
-const replies = aiText
-  .split(/(?<=[。！？.!?])/)
+      const replies = aiText
+  .split(/\n|(?<=[。！？.!?])/)
+  .map((s) => s.trim())
   .filter(Boolean);
+
+
 
 for (let i = 0; i < replies.length; i++) {
   const text = replies[i];
