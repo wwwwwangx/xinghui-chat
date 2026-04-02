@@ -21,6 +21,7 @@ export async function POST(req) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
+        messages: [
       {
   role: "system",
   content: `
