@@ -1,0 +1,38 @@
+[
+  {
+    "id": "m-1775302228459",
+    "type": "message",
+    "role": "me",
+    "avatar": "我",
+    "text": "测试测试",
+    "time": "19:30",
+    "read": true
+  },
+  {
+    "id": "m-1775302344646",
+    "type": "message",
+    "role": "me",
+    "avatar": "我",
+    "text": "knock knock",
+    "time": "19:32",
+    "read": true
+  },
+  {
+    "id": "m-1775302492588",
+    "type": "message",
+    "role": "me",
+    "avatar": "我",
+    "text": "test",
+    "time": "19:34",
+    "read": true
+  },
+  {
+    "id": "m-1775302827426",
+    "type": "message",
+    "role": "me",
+    "avatar": "我",
+    "text": "test",
+    "time": "19:40",
+    "read": true
+  }
+]
