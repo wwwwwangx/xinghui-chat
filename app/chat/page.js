@@ -499,7 +499,7 @@ for (let i = 0; i < replies.length; i++) {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, showEmojiPanel, showPlusPanel]);
   useEffect(() => {
-  const saved = localStorage.getItem("chat_messages");
+ const saved = null;
   if (saved) {
     setMessages(JSON.parse(saved));
   }
