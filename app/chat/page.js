@@ -128,7 +128,19 @@ export default function ChatPage() {
     read: true,
   };
 
-  setMessages((prev) => [...prev, userMessage]);
+setMessages((prev) => {
+  const updated = [...prev, userMessage];
+
+  fetch("/api/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ messages: updated }),
+  });
+
+  return updated;
+});
   setInput("");
 
   try {
@@ -152,7 +164,8 @@ export default function ChatPage() {
 for (let i = 0; i < replies.length; i++) {
   const text = replies[i];
 
-  setMessages((prev) => [
+  setMessages((prev) => {
+  const updated = [
     ...prev,
     {
       id: `m-${Date.now()}-${i}`,
@@ -160,12 +173,23 @@ for (let i = 0; i < replies.length; i++) {
       role: "other",
       avatar: "星",
       text,
-     thoughtSummary: data?.thoughtSummary || "他刚刚在想点什么",
-     thoughtFull: data?.thoughtFull || "",
+      thoughtSummary: data?.thoughtSummary || "他刚刚在想点什么",
+      thoughtFull: data?.thoughtFull || "",
       time: getCurrentTime(),
       read: true,
     },
-  ]);
+  ];
+
+  fetch("/api/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ messages: updated }),
+  });
+
+  return updated;
+});
 
   if (i < replies.length - 1) {
     await new Promise((r) => setTimeout(r, 400));
@@ -498,11 +522,14 @@ for (let i = 0; i < replies.length; i++) {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, showEmojiPanel, showPlusPanel]);
-  useEffect(() => {
- const saved = null;
-  if (saved) {
-    setMessages(JSON.parse(saved));
-  }
+ useEffect(() => {
+  fetch("/api/messages")
+    .then(res => res.json())
+    .then(data => {
+      if (data.messages) {
+        setMessages(data.messages);
+      }
+    });
 }, []);
   useEffect(() => {
 }, [messages]);
