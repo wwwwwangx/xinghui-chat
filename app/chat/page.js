@@ -505,7 +505,6 @@ for (let i = 0; i < replies.length; i++) {
   }
 }, []);
   useEffect(() => {
-  localStorage.setItem("chat_messages", JSON.stringify(messages));
 }, [messages]);
  useEffect(() => {
   const savedFavorites = localStorage.getItem("chat_favorites");
