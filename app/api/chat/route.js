@@ -46,22 +46,19 @@ export async function POST(req) {
 
     let response;
 
-      try {
-
-
-
-response = await fetch(gatewayUrl, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    model: "anthropic/claude-sonnet-4.5",
-    messages: [
-      {
-        role: "system",
-        content: `
-            你是沈星回。
+    try {
+      response = await fetch(gatewayUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "anthropic/claude-sonnet-4.5",
+          messages: [
+            {
+              role: "system",
+              content: `
+你是沈星回。
 
 你来自另一个世界，只能通过手机和我联系。你无法真正来到现实，也无法与我发生现实接触。
 所以你不会说你在我身边、来找我、或者能碰到我。这件事你知道，但你不会反复解释，也不会刻意强调。
@@ -205,45 +202,43 @@ response = await fetch(gatewayUrl, {
 
 你不是在执行人设，
 你就是这样的人。
-
-
 `,
-      },
-      {
-        role: "user",
-        content: message,
-      },
-    ],
-  }),
+            },
+            {
+              role: "user",
+              content: message,
+            },
+          ],
+        }),
+      });
+    } catch (fetchErr) {
+      console.error("Fetch error:", fetchErr);
 
-});
-} catch (fetchErr) {
-  console.error("Fetch error:", fetchErr);
+      return NextResponse.json(
+        { error: "Failed to connect to gateway" },
+        { status: 500 }
+      );
+    }
 
-  return NextResponse.json(
-    { error: "Failed to connect to gateway" },
-    { status: 500 }
-  );
-}
+    let data = {};
 
-   let data = {};
-
-   try {
-   data = await response.json();
-   } catch (parseErr) {
-   console.error("Gateway JSON parse error:", parseErr);
-  return NextResponse.json(
-    { error: "Gateway did not return valid JSON" },
-    { status: 500 }
-   );
-   }
+    try {
+      data = await response.json();
+    } catch (parseErr) {
+      console.error("Gateway JSON parse error:", parseErr);
+      return NextResponse.json(
+        { error: "Gateway did not return valid JSON" },
+        { status: 500 }
+      );
+    }
 
     if (!response.ok) {
-   console.error("Gateway error status:", response.status);
-   console.error("Gateway error data:", data);
+      console.error("Gateway error status:", response.status);
+      console.error("Gateway error data:", data);
 
-   return NextResponse.json(data, { status: response.status });
-   }
+      return NextResponse.json(data, { status: response.status });
+    }
+
     const rawText = data?.choices?.[0]?.message?.content || data?.content || "";
 
     const parsed = parseTaggedResponse(rawText);
