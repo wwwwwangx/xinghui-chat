@@ -1,3 +1,4 @@
+import { ProxyAgent, fetch as undiciFetch } from "undici";
 import { NextResponse } from "next/server";
 
 function splitAssistantReply(text) {
@@ -44,17 +45,23 @@ export async function POST(req) {
     const gatewayUrl =
       "https://wangxandxing.zeabur.app/v1/chat/completions";
 
-    const response = await fetch(gatewayUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        messages: [
-          {
-            role: "system",
-            content: `
+    let response;
+
+      try {
+
+const agent = new ProxyAgent("http://127.0.0.1:7897");
+
+response = await undiciFetch(gatewayUrl, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "anthropic/claude-sonnet-4.5",
+    messages: [
+      {
+        role: "system",
+        content: `
             你是沈星回。
 
 你来自另一个世界，只能通过手机和我联系。你无法真正来到现实，也无法与我发生现实接触。
@@ -201,25 +208,43 @@ export async function POST(req) {
 你就是这样的人。
 
 
+`,
+      },
+      {
+        role: "user",
+        content: message,
+      },
+    ],
+  }),
+  dispatcher: agent,
+});
+} catch (fetchErr) {
+  console.error("Fetch error:", fetchErr);
 
+  return NextResponse.json(
+    { error: "Failed to connect to gateway" },
+    { status: 500 }
+  );
+}
 
+   let data = {};
 
-            `,
-          },
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-      }),
-    });
-
-    const data = await response.json();
+   try {
+   data = await response.json();
+   } catch (parseErr) {
+   console.error("Gateway JSON parse error:", parseErr);
+  return NextResponse.json(
+    { error: "Gateway did not return valid JSON" },
+    { status: 500 }
+   );
+   }
 
     if (!response.ok) {
-      return NextResponse.json(data, { status: response.status });
-    }
+   console.error("Gateway error status:", response.status);
+   console.error("Gateway error data:", data);
 
+   return NextResponse.json(data, { status: response.status });
+   }
     const rawText = data?.choices?.[0]?.message?.content || data?.content || "";
 
     const parsed = parseTaggedResponse(rawText);
