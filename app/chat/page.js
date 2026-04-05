@@ -149,15 +149,18 @@ setMessages((prev) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message: text }),
-    });
+     body: JSON.stringify({
+      messages: [
+       { role: "user", content: text }
+       ]
+      }),
+      });
 
-      const data = await res.json();
-      const aiText = data?.reply || "";
-      const replies = aiText
-  .split(/\n|(?<=[。！？.!?])/)
-  .map((s) => s.trim())
-  .filter(Boolean);
+     const data = await res.json();
+     const replies = Array.isArray(data?.replies)
+     ? data.replies
+     : splitAssistantReply(data?.reply || "");
+      if (!replies.length) throw new Error("AI returned empty replies");
 
 
 
