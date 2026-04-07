@@ -518,9 +518,19 @@ export default function ChatPage() {
     setShowPlusPanel(false);
   };
 
+  // 辅助函数：拆分AI回复
+  function splitAssistantReply(reply) {
+    if (!reply) return [];
+    return reply.split(/(?<=[。！？\n])/g).filter(s => s.trim());
+  }
+
+  // 自动滚动到底部
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, showEmojiPanel, showPlusPanel]);
+    const el = document.getElementById("chat-container");
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [messages]);
 
   useEffect(() => {
     fetch("/api/messages")
@@ -533,10 +543,6 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
-    // 保留用于未来副作用
-  }, [messages]);
-
-  useEffect(() => {
     const savedFavorites = localStorage.getItem("chat_favorites");
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
@@ -547,239 +553,6 @@ export default function ChatPage() {
     localStorage.setItem("chat_favorites", JSON.stringify(favorites));
   }, [favorites]);
 
-  // 辅助函数：拆分AI回复
-  function splitAssistantReply(reply) {
-    if (!reply) return [];
-    return reply.split(/(?<=[。！？\n])/g).filter(s => s.trim());
-  }
-
-  // 气泡尾巴组件（LINE风格，瘦小）
-  const BubbleTail = ({ side }) => {
-    const isLeft = side === "left";
-
-    return (
-      <div
-        style={{
-          position: "absolute",
-          bottom: "5px",
-          width: "10px",
-          height: "10px",
-          background: isLeft ? "#ffffff" : "#06C755",
-          [isLeft ? "left" : "right"]: "-4px",
-          borderRadius: isLeft ? "0 0 0 8px" : "0 0 8px 0",
-          transform: isLeft ? "rotate(6deg)" : "rotate(-6deg)",
-          zIndex: 0,
-        }}
-      />
-    );
-  };
-
-  // 渲染对方消息（白色气泡，左侧）
-  const renderOtherMessage = (msg) => {
-    return (
-      <div
-        key={msg.id}
-        style={{
-          display: "flex",
-          justifyContent: "flex-start",
-          marginBottom: "8px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: "6px",
-            maxWidth: "78%",
-          }}
-        >
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "999px",
-              background: "#d8ecff",
-              border: "1px solid rgba(255,255,255,0.7)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "14px",
-              color: "#53657c",
-              flexShrink: 0,
-            }}
-          >
-            {msg.avatar}
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              minWidth: 0,
-            }}
-          >
-            {msg.role === "other" && msg.thoughtSummary && (
-              <div
-                onClick={() => {
-                  setActiveThought(msg.thoughtFull || "他刚刚有点话没说出来。");
-                  setShowThoughtDrawer(true);
-                }}
-                style={{
-                  fontSize: "12px",
-                  color: "rgba(120,120,120,0.65)",
-                  marginBottom: "4px",
-                  lineHeight: 1.2,
-                  cursor: "pointer",
-                  paddingLeft: "4px",
-                }}
-              >
-                🩶 {msg.thoughtSummary}
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-end",
-                gap: "6px",
-                minWidth: 0,
-              }}
-            >
-              <div
-                style={{
-                  position: "relative",
-                  display: "inline-block",
-                  maxWidth: "64%",
-                  minWidth: "34px",
-                  background: "#ffffff",
-                  color: "#111111",
-                  padding: "9px 13px",
-                  borderRadius: "18px",
-                  fontSize: "15px",
-                  fontWeight: 400,
-                  lineHeight: 1.38,
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-                  wordBreak: "break-word",
-                  whiteSpace: "pre-wrap",
-                  zIndex: 1,
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  setActiveMessage(msg);
-                  setMenuPosition({ x: e.clientX, y: e.clientY });
-                  setShowMessageMenu(true);
-                }}
-              >
-                <span style={{ position: "relative", zIndex: 2 }}>{msg.text}</span>
-                <BubbleTail side="left" />
-              </div>
-
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "rgba(50,60,70,0.58)",
-                  marginBottom: "2px",
-                  flexShrink: 0,
-                }}
-              >
-                {msg.time}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 渲染自己消息（绿色气泡，右侧）
-  const renderMyMessage = (msg) => {
-    return (
-      <div
-        key={msg.id}
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: "8px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            gap: "6px",
-            maxWidth: "78%",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              justifyContent: "flex-end",
-              fontSize: "11px",
-              color: "rgba(50,60,70,0.58)",
-              lineHeight: 1.15,
-              minWidth: "34px",
-              marginBottom: "3px",
-              flexShrink: 0,
-            }}
-          >
-            <span>{msg.read ? "已读" : ""}</span>
-            <span>{msg.time}</span>
-          </div>
-
-          <div
-            style={{
-              position: "relative",
-              display: "inline-block",
-              maxWidth: "64%",
-              minWidth: "34px",
-              background: "#06C755",
-              color: "#ffffff",
-              padding: "9px 13px",
-              borderRadius: "18px",
-              fontSize: "15px",
-              fontWeight: 500,
-              lineHeight: 1.38,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-              wordBreak: "break-word",
-              whiteSpace: "pre-wrap",
-              zIndex: 1,
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setActiveMessage(msg);
-              setMenuPosition({ x: e.clientX, y: e.clientY });
-              setShowMessageMenu(true);
-            }}
-          >
-            <span style={{ position: "relative", zIndex: 2 }}>{msg.text}</span>
-            <BubbleTail side="right" />
-          </div>
-
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "999px",
-              background: "#e8f2ff",
-              border: "1px solid rgba(255,255,255,0.7)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "14px",
-              color: "#53657c",
-              flexShrink: 0,
-            }}
-          >
-            我
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div
       style={{
@@ -787,7 +560,7 @@ export default function ChatPage() {
         background: "#f4f4f4",
         display: "flex",
         justifyContent: "center",
-        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Apple Color Emoji", "Segoe UI Emoji", sans-serif',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Apple Color Emoji", sans-serif',
       }}
     >
       <div
@@ -852,20 +625,22 @@ export default function ChatPage() {
         </div>
 
         <div
+          id="chat-container"
           style={{
             position: "relative",
             zIndex: 1,
             flex: 1,
             overflowY: "auto",
-            padding: "14px 10px 10px",
+            padding: "14px 0 10px 0",
             boxSizing: "border-box",
           }}
         >
-          {messages.map((item) => {
-            if (item.type === "date") {
+          {messages.map((message, idx) => {
+            // 日期分隔线
+            if (message.type === "date") {
               return (
                 <div
-                  key={item.id}
+                  key={message.id}
                   style={{
                     display: "flex",
                     justifyContent: "center",
@@ -882,24 +657,31 @@ export default function ChatPage() {
                       lineHeight: 1,
                     }}
                   >
-                    {item.label}
+                    {message.label}
                   </div>
                 </div>
               );
             }
 
-            const msg = item;
-            const isMe = msg.role === "me";
+            const prev = messages[idx - 1];
+            const next = messages[idx + 1];
+            const isSamePrev = prev && prev.role === message.role;
+            const isSameNext = next && next.role === message.role;
 
-            // 卡片类型 (自己发出的各种卡片消息)
-            if (msg.type === "card" && isMe) {
+            const isUser = message.role === "me";
+
+            // 卡片消息（自己发出的特殊卡片）单独处理，保持原有样式但调整分组间距
+            if (message.type === "card" && isUser) {
               return (
                 <div
-                  key={msg.id}
+                  key={message.id}
                   style={{
                     display: "flex",
                     justifyContent: "flex-end",
-                    marginBottom: "14px",
+                    marginTop: isSamePrev ? 4 : 14,
+                    marginBottom: isSameNext ? 2 : 4,
+                    paddingLeft: 10,
+                    paddingRight: 10,
                   }}
                 >
                   <div
@@ -923,11 +705,12 @@ export default function ChatPage() {
                         marginBottom: "4px",
                       }}
                     >
-                      <span>{msg.read ? "已读" : ""}</span>
-                      <span>{msg.time}</span>
+                      <span>{message.read ? "已读" : ""}</span>
+                      <span>{message.time}</span>
                     </div>
 
-                    {msg.cardType === "hongbao" && (
+                    {/* 红包卡片 */}
+                    {message.cardType === "hongbao" && (
                       <div
                         style={{
                           width: "220px",
@@ -955,10 +738,10 @@ export default function ChatPage() {
                           </div>
                           <div>
                             <div style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>
-                              {msg.title}
+                              {message.title}
                             </div>
                             <div style={{ fontSize: "12px", opacity: 0.95 }}>
-                              {msg.subtitle}
+                              {message.subtitle}
                             </div>
                           </div>
                         </div>
@@ -975,7 +758,8 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {msg.cardType === "gift" && (
+                    {/* 礼物卡片 */}
+                    {message.cardType === "gift" && (
                       <div
                         style={{
                           width: "220px",
@@ -1003,10 +787,10 @@ export default function ChatPage() {
                           </div>
                           <div>
                             <div style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>
-                              {msg.title}
+                              {message.title}
                             </div>
                             <div style={{ fontSize: "12px", opacity: 0.95 }}>
-                              {msg.subtitle}
+                              {message.subtitle}
                             </div>
                           </div>
                         </div>
@@ -1023,7 +807,8 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {msg.cardType === "transfer" && (
+                    {/* 转账卡片 */}
+                    {message.cardType === "transfer" && (
                       <div
                         style={{
                           width: "260px",
@@ -1059,7 +844,6 @@ export default function ChatPage() {
                           >
                             ⇄
                           </div>
-
                           <div style={{ flex: 1 }}>
                             <div
                               style={{
@@ -1069,7 +853,7 @@ export default function ChatPage() {
                                 marginBottom: "8px",
                               }}
                             >
-                              {msg.amount}
+                              {message.amount}
                             </div>
                             <div
                               style={{
@@ -1078,11 +862,10 @@ export default function ChatPage() {
                                 opacity: 0.96,
                               }}
                             >
-                              {msg.title}
+                              {message.title}
                             </div>
                           </div>
                         </div>
-
                         <div
                           style={{
                             height: "1px",
@@ -1090,7 +873,6 @@ export default function ChatPage() {
                             margin: "0 18px",
                           }}
                         />
-
                         <div
                           style={{
                             padding: "10px 18px 12px",
@@ -1098,12 +880,13 @@ export default function ChatPage() {
                             color: "#ffeccf",
                           }}
                         >
-                          {msg.subtitle}
+                          {message.subtitle}
                         </div>
                       </div>
                     )}
 
-                    {msg.cardType === "photo" && (
+                    {/* 照片卡片 */}
+                    {message.cardType === "photo" && (
                       <div
                         style={{
                           width: "220px",
@@ -1123,11 +906,11 @@ export default function ChatPage() {
                             overflow: "hidden",
                           }}
                         >
-                          {msg.imageUrl ? (
+                          {message.imageUrl ? (
                             <img
-                              src={msg.imageUrl}
-                              onClick={() => setPreviewImage(msg.imageUrl)}
-                              alt={msg.title}
+                              src={message.imageUrl}
+                              onClick={() => setPreviewImage(message.imageUrl)}
+                              alt={message.title}
                               style={{
                                 width: "100%",
                                 height: "100%",
@@ -1141,16 +924,17 @@ export default function ChatPage() {
                         </div>
                         <div style={{ padding: "10px 12px 12px" }}>
                           <div style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "4px" }}>
-                            {msg.title}
+                            {message.title}
                           </div>
-                          <div style={{ fontSize: "12px", color: msg.uploading ? "#f59e0b" : "#666" }}>
-                            {msg.subtitle}
+                          <div style={{ fontSize: "12px", color: message.uploading ? "#f59e0b" : "#666" }}>
+                            {message.subtitle}
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {msg.cardType === "location" && (
+                    {/* 位置卡片 */}
+                    {message.cardType === "location" && (
                       <div
                         style={{
                           width: "220px",
@@ -1175,18 +959,19 @@ export default function ChatPage() {
                         </div>
                         <div style={{ padding: "10px 12px 12px" }}>
                           <div style={{ fontSize: "14px", fontWeight: 700, color: "#222", marginBottom: "4px" }}>
-                            {msg.title}
+                            {message.title}
                           </div>
                           <div style={{ fontSize: "12px", color: "#666" }}>
-                            {msg.subtitle}
+                            {message.subtitle}
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {msg.cardType === "file" && (
+                    {/* 文件卡片 */}
+                    {message.cardType === "file" && (
                       <div
-                        onClick={() => msg.url && window.open(msg.url, "_blank")}
+                        onClick={() => message.url && window.open(message.url, "_blank")}
                         style={{
                           width: "220px",
                           borderRadius: "18px",
@@ -1226,19 +1011,20 @@ export default function ChatPage() {
                                 wordBreak: "break-word",
                               }}
                             >
-                              {msg.title}
+                              {message.title}
                             </div>
-                            <div style={{ fontSize: "12px", color: msg.uploading ? "#f59e0b" : "#666" }}>
-                              {msg.subtitle}
+                            <div style={{ fontSize: "12px", color: message.uploading ? "#f59e0b" : "#666" }}>
+                              {message.subtitle}
                             </div>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {msg.cardType === "music" && (
+                    {/* 音乐卡片 */}
+                    {message.cardType === "music" && (
                       <div
-                        onClick={() => msg.url && window.open(msg.url, "_blank")}
+                        onClick={() => message.url && window.open(message.url, "_blank")}
                         style={{
                           width: "220px",
                           borderRadius: "18px",
@@ -1276,17 +1062,18 @@ export default function ChatPage() {
                                 wordBreak: "break-word",
                               }}
                             >
-                              {msg.title}
+                              {message.title}
                             </div>
                             <div style={{ fontSize: "12px", opacity: 0.92 }}>
-                              {msg.subtitle}
+                              {message.subtitle}
                             </div>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {msg.cardType === "favorite" && (
+                    {/* 收藏卡片 */}
+                    {message.cardType === "favorite" && (
                       <div
                         style={{
                           width: "220px",
@@ -1317,7 +1104,7 @@ export default function ChatPage() {
                           </div>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontSize: "15px", fontWeight: 700, color: "#222", marginBottom: "4px" }}>
-                              {msg.title}
+                              {message.title}
                             </div>
                             <div
                               style={{
@@ -1326,7 +1113,7 @@ export default function ChatPage() {
                                 wordBreak: "break-word",
                               }}
                             >
-                              {msg.subtitle}
+                              {message.subtitle}
                             </div>
                           </div>
                         </div>
@@ -1355,19 +1142,138 @@ export default function ChatPage() {
               );
             }
 
-            // 普通文本消息
-            if (msg.type === "message") {
-              if (isMe) {
-                return renderMyMessage(msg);
-              } else {
-                return renderOtherMessage(msg);
-              }
-            }
+            // 普通文本消息（应用分组、头像、气泡样式）
+            return (
+              <div
+                key={message.id}
+                style={{
+                  display: "flex",
+                  flexDirection: isUser ? "row-reverse" : "row",
+                  alignItems: "flex-end",
+                  marginTop: isSamePrev ? 4 : 14,
+                  marginBottom: isSameNext ? 2 : 4,
+                  paddingLeft: 10,
+                  paddingRight: 10,
+                }}
+              >
+                {/* 头像区域：只显示在对方消息组的最后一条 */}
+                {!isUser && !isSameNext && (
+                  <img
+                    src="/avatar.png"
+                    alt="avatar"
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: "50%",
+                      marginRight: 6,
+                      flexShrink: 0,
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      // 如果图片加载失败，显示文字回退
+                      const parent = e.target.parentNode;
+                      const fallback = document.createElement("div");
+                      fallback.textContent = message.avatar || "星";
+                      fallback.style.width = "34px";
+                      fallback.style.height = "34px";
+                      fallback.style.borderRadius = "50%";
+                      fallback.style.background = "#d8ecff";
+                      fallback.style.border = "1px solid rgba(255,255,255,0.7)";
+                      fallback.style.display = "flex";
+                      fallback.style.alignItems = "center";
+                      fallback.style.justifyContent = "center";
+                      fallback.style.fontSize = "14px";
+                      fallback.style.color = "#53657c";
+                      fallback.style.marginRight = "6px";
+                      parent.insertBefore(fallback, e.target);
+                      e.target.remove();
+                    }}
+                  />
+                )}
 
-            // 兜底（理论上不会执行到这里）
-            return null;
+                {/* 消息内容区域：包括思考摘要和气泡 */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: isUser ? "flex-end" : "flex-start",
+                    maxWidth: "66%",
+                  }}
+                >
+                  {/* 思考摘要（仅对方） */}
+                  {!isUser && message.thoughtSummary && (
+                    <div
+                      onClick={() => {
+                        setActiveThought(message.thoughtFull || "他刚刚有点话没说出来。");
+                        setShowThoughtDrawer(true);
+                      }}
+                      style={{
+                        fontSize: "12px",
+                        color: "rgba(120,120,120,0.65)",
+                        marginBottom: "4px",
+                        lineHeight: 1.2,
+                        cursor: "pointer",
+                        paddingLeft: "4px",
+                        paddingRight: "4px",
+                      }}
+                    >
+                      🩶 {message.thoughtSummary}
+                    </div>
+                  )}
+
+                  <div
+                    className={`bubble ${isUser ? "bubble-user" : "bubble-bot"}`}
+                    style={{
+                      background: isUser ? "#06C755" : "#ffffff",
+                      color: "#1a1a1a",
+                      padding: "5px 9px",
+                      borderRadius: 12,
+                      maxWidth: "100%",
+                      fontSize: 14,
+                      lineHeight: 1.35,
+                      fontWeight: 400,
+                      display: "inline-block",
+                      wordBreak: "break-word",
+                      whiteSpace: "pre-wrap",
+                      position: "relative",
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setActiveMessage(message);
+                      setMenuPosition({ x: e.clientX, y: e.clientY });
+                      setShowMessageMenu(true);
+                    }}
+                  >
+                    {message.text}
+                  </div>
+
+                  {/* 时间（仅自己消息显示在气泡下方外侧，这里为了简洁，时间和已读放在右侧独立区域，保持原有习惯） */}
+                </div>
+
+                {/* 已读/时间区域（仅自己） */}
+                {isUser && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      justifyContent: "flex-end",
+                      fontSize: "11px",
+                      color: "rgba(50,60,70,0.58)",
+                      lineHeight: 1.15,
+                      minWidth: "34px",
+                      marginLeft: 6,
+                      marginBottom: 3,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span>{message.read ? "已读" : ""}</span>
+                    <span>{message.time}</span>
+                  </div>
+                )}
+              </div>
+            );
           })}
-
           <div ref={chatEndRef} />
         </div>
 
@@ -1375,9 +1281,9 @@ export default function ChatPage() {
           style={{
             position: "relative",
             zIndex: 2,
-            background: "rgba(255,255,255,0.97)",
-            borderTop: "1px solid rgba(0,0,0,0.05)",
-            padding: "8px 10px 10px",
+            background: "#fff",
+            borderTop: "1px solid #eee",
+            padding: "8px 10px",
           }}
         >
           <div
@@ -1401,10 +1307,9 @@ export default function ChatPage() {
             <div
               style={{
                 flex: 1,
-                height: "40px",
+                borderRadius: 18,
+                border: "1px solid #ddd",
                 background: "#f7f7f7",
-                border: "1px solid #ececec",
-                borderRadius: "20px",
                 display: "flex",
                 alignItems: "center",
                 padding: "0 10px",
@@ -1428,25 +1333,30 @@ export default function ChatPage() {
                   outline: "none",
                   resize: "none",
                   background: "transparent",
-                  fontSize: "14px",
+                  fontSize: 14,
                   lineHeight: 1.4,
-                  paddingTop: "10px",
+                  paddingTop: "6px",
+                  paddingBottom: "6px",
                   maxHeight: "88px",
                   fontFamily: "inherit",
                   color: "#222",
                 }}
               />
 
-              <button
-                style={smallIconBtnStyle}
-                title="表情"
+              <div
                 onClick={() => {
                   setShowEmojiPanel((prev) => !prev);
                   setShowPlusPanel(false);
                 }}
+                style={{
+                  fontSize: 20,
+                  marginRight: 0,
+                  color: "#555",
+                  cursor: "pointer",
+                }}
               >
-                ☺
-              </button>
+                🙂
+              </div>
             </div>
 
             <button
@@ -1720,7 +1630,7 @@ export default function ChatPage() {
           </div>
         )}
 
-        {openThought ? (
+        {openThought && (
           <>
             <div
               onClick={() => setOpenThought(null)}
@@ -1809,7 +1719,7 @@ export default function ChatPage() {
               </div>
             </div>
           </>
-        ) : null}
+        )}
 
         {showMessageMenu && (
           <div
@@ -1909,6 +1819,31 @@ export default function ChatPage() {
           </>
         )}
       </div>
+
+      <style jsx>{`
+        .bubble-user::after {
+          content: "";
+          position: absolute;
+          right: -5px;
+          bottom: 6px;
+          width: 0;
+          height: 0;
+          border-left: 5px solid #06C755;
+          border-top: 5px solid transparent;
+          border-bottom: 5px solid transparent;
+        }
+        .bubble-bot::after {
+          content: "";
+          position: absolute;
+          left: -5px;
+          bottom: 6px;
+          width: 0;
+          height: 0;
+          border-right: 5px solid #ffffff;
+          border-top: 5px solid transparent;
+          border-bottom: 5px solid transparent;
+        }
+      `}</style>
     </div>
   );
 }
@@ -1922,16 +1857,5 @@ const leftArrowBtnStyle = {
   fontSize: "22px",
   lineHeight: 1,
   color: "#333",
-  cursor: "pointer",
-};
-
-const smallIconBtnStyle = {
-  width: "30px",
-  height: "30px",
-  borderRadius: "999px",
-  border: "none",
-  background: "transparent",
-  fontSize: "18px",
-  color: "#444",
   cursor: "pointer",
 };
