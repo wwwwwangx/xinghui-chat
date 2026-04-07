@@ -553,7 +553,7 @@ export default function ChatPage() {
     return reply.split(/(?<=[。！？\n])/g).filter(s => s.trim());
   }
 
-  // 气泡尾巴组件（LINE风格）
+  // 气泡尾巴组件（LINE风格，瘦小）
   const BubbleTail = ({ side }) => {
     const isLeft = side === "left";
 
@@ -561,18 +561,13 @@ export default function ChatPage() {
       <div
         style={{
           position: "absolute",
-          bottom: "6px",
-          width: "14px",
-          height: "14px",
+          bottom: "5px",
+          width: "10px",
+          height: "10px",
           background: isLeft ? "#ffffff" : "#06C755",
-          [isLeft ? "left" : "right"]: "-6px",
-          borderRadius: isLeft
-            ? "0 0 0 12px"
-            : "0 0 12px 0",
-          transform: isLeft
-            ? "rotate(8deg)"
-            : "rotate(-8deg)",
-          boxShadow: isLeft ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+          [isLeft ? "left" : "right"]: "-4px",
+          borderRadius: isLeft ? "0 0 0 8px" : "0 0 8px 0",
+          transform: isLeft ? "rotate(6deg)" : "rotate(-6deg)",
           zIndex: 0,
         }}
       />
@@ -587,15 +582,15 @@ export default function ChatPage() {
         style={{
           display: "flex",
           justifyContent: "flex-start",
-          marginBottom: "10px",
+          marginBottom: "8px",
         }}
       >
         <div
           style={{
             display: "flex",
             alignItems: "flex-start",
-            gap: "8px",
-            maxWidth: "82%",
+            gap: "6px",
+            maxWidth: "78%",
           }}
         >
           <div
@@ -655,15 +650,16 @@ export default function ChatPage() {
                 style={{
                   position: "relative",
                   display: "inline-block",
-                  maxWidth: "100%",
-                  minWidth: "44px",
+                  maxWidth: "64%",
+                  minWidth: "34px",
                   background: "#ffffff",
-                  color: "#1f1f1f",
-                  padding: "11px 14px",
+                  color: "#111111",
+                  padding: "9px 13px",
                   borderRadius: "18px",
-                  fontSize: "16px",
-                  lineHeight: 1.42,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                  fontSize: "15px",
+                  fontWeight: 400,
+                  lineHeight: 1.38,
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
                   wordBreak: "break-word",
                   whiteSpace: "pre-wrap",
                   zIndex: 1,
@@ -682,7 +678,7 @@ export default function ChatPage() {
               <div
                 style={{
                   fontSize: "11px",
-                  color: "rgba(62,70,84,0.65)",
+                  color: "rgba(50,60,70,0.58)",
                   marginBottom: "2px",
                   flexShrink: 0,
                 }}
@@ -704,7 +700,7 @@ export default function ChatPage() {
         style={{
           display: "flex",
           justifyContent: "flex-end",
-          marginBottom: "10px",
+          marginBottom: "8px",
         }}
       >
         <div
@@ -712,7 +708,7 @@ export default function ChatPage() {
             display: "flex",
             alignItems: "flex-end",
             gap: "6px",
-            maxWidth: "82%",
+            maxWidth: "78%",
           }}
         >
           <div
@@ -722,7 +718,7 @@ export default function ChatPage() {
               alignItems: "flex-end",
               justifyContent: "flex-end",
               fontSize: "11px",
-              color: "rgba(62,70,84,0.65)",
+              color: "rgba(50,60,70,0.58)",
               lineHeight: 1.15,
               minWidth: "34px",
               marginBottom: "3px",
@@ -737,15 +733,16 @@ export default function ChatPage() {
             style={{
               position: "relative",
               display: "inline-block",
-              maxWidth: "100%",
-              minWidth: "44px",
+              maxWidth: "64%",
+              minWidth: "34px",
               background: "#06C755",
               color: "#ffffff",
-              padding: "11px 14px",
+              padding: "9px 13px",
               borderRadius: "18px",
-              fontSize: "16px",
-              lineHeight: 1.42,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              fontSize: "15px",
+              fontWeight: 500,
+              lineHeight: 1.38,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
               wordBreak: "break-word",
               whiteSpace: "pre-wrap",
               zIndex: 1,
@@ -790,6 +787,7 @@ export default function ChatPage() {
         background: "#f4f4f4",
         display: "flex",
         justifyContent: "center",
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Apple Color Emoji", "Segoe UI Emoji", sans-serif',
       }}
     >
       <div
