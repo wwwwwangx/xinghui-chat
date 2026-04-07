@@ -1,25 +1,32 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { Pool } from "pg";
 
-const filePath = path.join(process.cwd(), "messages.json");
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes("localhost")
+    ? false
+    : { rejectUnauthorized: false },
+});
 
-function readMessages() {
-  try {
-    const data = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-function writeMessages(messages) {
-  fs.writeFileSync(filePath, JSON.stringify(messages, null, 2));
-}
+const SESSION_ID = "default";
 
 export async function GET() {
-  const messages = readMessages();
-  return NextResponse.json({ messages });
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(
+        "SELECT message_data FROM chat_messages WHERE session_id = $1 ORDER BY id ASC",
+        [SESSION_ID]
+      );
+      const messages = result.rows.map((row) => row.message_data);
+      return NextResponse.json({ messages });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("[GET /api/messages]", err);
+    return NextResponse.json({ messages: [] });
+  }
 }
 
 export async function POST(req) {
@@ -27,13 +34,33 @@ export async function POST(req) {
     const body = await req.json();
     const newMessages = body.messages || [];
 
-    writeMessages(newMessages);
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
 
-    return NextResponse.json({ success: true });
+      await client.query(
+        "DELETE FROM chat_messages WHERE session_id = $1",
+        [SESSION_ID]
+      );
+
+      for (const msg of newMessages) {
+        await client.query(
+          "INSERT INTO chat_messages (session_id, message_data) VALUES ($1, $2)",
+          [SESSION_ID, JSON.stringify(msg)]
+        );
+      }
+
+      await client.query("COMMIT");
+
+      return NextResponse.json({ success: true });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
   } catch (err) {
-    return NextResponse.json(
-      { error: err.message || "error" },
-      { status: 500 }
-    );
+    console.error("[POST /api/messages]", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
