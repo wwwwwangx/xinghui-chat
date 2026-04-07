@@ -1116,7 +1116,7 @@ export default function ChatPage() {
               );
             }
 
-            // 普通文本消息：严格按照用户要求，自己无头像、无名字，时间与气泡横排
+            // 普通文本消息：自己无头像、无名字，时间与气泡横排
             return (
               <div
                 key={message.id}
@@ -1134,7 +1134,7 @@ export default function ChatPage() {
                   <div
                     style={{
                       width: 42, height: 42, flexShrink: 0,
-                      borderRadius: "10px",
+                      borderRadius: "50%",
                       backgroundColor: "#d8ecff",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: "20px",
@@ -1233,7 +1233,7 @@ export default function ChatPage() {
                       }}
                     >
                       {isUser && message.read && (
-                        <span style={{ color: "#5aad3f", fontSize: "11px" }}>已读</span>
+                        <span style={{ color: "rgba(0,0,0,0.38)", fontSize: "11px" }}>已读</span>
                       )}
                       <span>{message.time}</span>
                     </div>
