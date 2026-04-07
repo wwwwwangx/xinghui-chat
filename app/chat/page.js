@@ -557,7 +557,7 @@ export default function ChatPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#f4f4f4",
+        background: "#f3f3f3",
         display: "flex",
         justifyContent: "center",
         fontFamily: '-apple-system, BlinkMacSystemFont, "Apple Color Emoji", sans-serif',
@@ -570,21 +570,11 @@ export default function ChatPage() {
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
-          background: "#9db8e2",
+          background: "#f3f3f3",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(circle at 18% 20%, rgba(255,255,255,0.14), transparent 18%), radial-gradient(circle at 72% 30%, rgba(255,255,255,0.10), transparent 16%), radial-gradient(circle at 30% 72%, rgba(255,255,255,0.08), transparent 15%), linear-gradient(to bottom, #9db8e2 0%, #97b3de 100%)",
-            zIndex: 0,
-          }}
-        />
-
         <div
           style={{
             position: "relative",
@@ -631,7 +621,7 @@ export default function ChatPage() {
             zIndex: 1,
             flex: 1,
             overflowY: "auto",
-            padding: "14px 0 10px 0",
+            padding: "8px 0",
             boxSizing: "border-box",
           }}
         >
@@ -649,8 +639,8 @@ export default function ChatPage() {
                 >
                   <div
                     style={{
-                      background: "rgba(104,123,151,0.55)",
-                      color: "#fff",
+                      background: "rgba(0,0,0,0.1)",
+                      color: "#555",
                       fontSize: "12px",
                       padding: "5px 12px",
                       borderRadius: "999px",
@@ -669,21 +659,23 @@ export default function ChatPage() {
             const isSameNext = next && next.role === message.role;
             const isUser = message.role === "me";
 
-            // 卡片消息（自己发送的特殊卡片）
+            // 卡片消息（自己发送的特殊卡片）保持原有样式但调整间距和对齐
             if (message.type === "card" && isUser) {
               return (
                 <div
                   key={message.id}
                   style={{
                     display: "flex",
-                    flexDirection: "row-reverse",
-                    alignItems: "flex-end",
-                    marginTop: isSamePrev ? 4 : 14,
-                    paddingLeft: 10,
-                    paddingRight: 10,
-                    marginBottom: 2,
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                    padding: "8px 12px",
+                    width: "100%",
+                    boxSizing: "border-box",
                   }}
                 >
+                  {/* 左侧占位（保持对齐） */}
+                  <div style={{ width: 40, marginRight: 8 }} />
+                  
                   <div
                     style={{
                       display: "flex",
@@ -1142,63 +1134,66 @@ export default function ChatPage() {
               );
             }
 
-            // 普通文本消息（LINE风格）
+            // 普通文本消息（LINE风格，占位对齐）
             return (
               <div
                 key={message.id}
                 style={{
                   display: "flex",
-                  flexDirection: isUser ? "row-reverse" : "row",
-                  alignItems: "flex-end",
-                  marginTop: isSamePrev ? 4 : 14,
-                  paddingLeft: 10,
-                  paddingRight: 10,
-                  marginBottom: 2,
+                  flexDirection: "row",
+                  justifyContent: isUser ? "flex-end" : "flex-start",
+                  padding: "8px 12px",
+                  width: "100%",
+                  boxSizing: "border-box",
                 }}
               >
-                {/* 对方头像：只显示在对方消息组的最后一条 */}
-                {!isUser && !isSamePrev && (
-                  <img
-                    src="/avatar.png"
-                    alt="avatar"
-                    style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: "50%",
-                      marginRight: 6,
-                      flexShrink: 0,
-                    }}
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                      // fallback: 显示文字
-                      const fallback = document.createElement("div");
-                      fallback.textContent = message.avatar || "星";
-                      fallback.style.width = "34px";
-                      fallback.style.height = "34px";
-                      fallback.style.borderRadius = "50%";
-                      fallback.style.background = "#d8ecff";
-                      fallback.style.border = "1px solid rgba(255,255,255,0.7)";
-                      fallback.style.display = "flex";
-                      fallback.style.alignItems = "center";
-                      fallback.style.justifyContent = "center";
-                      fallback.style.fontSize = "14px";
-                      fallback.style.color = "#53657c";
-                      fallback.style.marginRight = "6px";
-                      e.target.parentNode.insertBefore(fallback, e.target);
-                    }}
-                  />
+                {/* 左侧区域：对方头像占位 */}
+                {!isUser && (
+                  <div style={{ width: 40, marginRight: 8, display: "flex", justifyContent: "center" }}>
+                    {!isSameNext ? (
+                      <img
+                        src="/avatar.png"
+                        alt="avatar"
+                        style={{ width: 40, height: 40, borderRadius: 6 }}
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          const fallback = document.createElement("div");
+                          fallback.textContent = message.avatar || "星";
+                          fallback.style.width = "40px";
+                          fallback.style.height = "40px";
+                          fallback.style.borderRadius = "6px";
+                          fallback.style.background = "#d8ecff";
+                          fallback.style.display = "flex";
+                          fallback.style.alignItems = "center";
+                          fallback.style.justifyContent = "center";
+                          fallback.style.fontSize = "14px";
+                          fallback.style.color = "#53657c";
+                          e.target.parentNode.appendChild(fallback);
+                        }}
+                      />
+                    ) : (
+                      <div style={{ width: 40 }} />
+                    )}
+                  </div>
                 )}
 
-                {/* 气泡容器（含思考摘要） */}
+                {/* 消息本体容器 */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: isUser ? "flex-end" : "flex-start",
-                    maxWidth: "66%",
+                    maxWidth: "70%",
                   }}
                 >
-                  {/* 对方思考摘要 */}
+                  {/* 对方名称：只在消息组第一条显示 */}
+                  {!isUser && !isSamePrev && (
+                    <span style={{ fontSize: 12, color: "#888", marginBottom: 4, marginLeft: 2 }}>
+                      {message.avatar === "星" ? "沈星回" : message.avatar}
+                    </span>
+                  )}
+
+                  {/* 思考摘要（仅对方） */}
                   {!isUser && message.thoughtSummary && (
                     <div
                       onClick={() => {
@@ -1220,20 +1215,18 @@ export default function ChatPage() {
                   )}
 
                   <div
-                    className={`bubble ${isUser ? "bubble-user" : "bubble-bot"}`}
+                    className={isUser ? "bubble-user" : "bubble-bot"}
                     style={{
-                      background: isUser ? "#06C755" : "#ffffff",
-                      color: "#1a1a1a",
-                      padding: "5px 9px",
-                      borderRadius: 12,
-                      maxWidth: "100%",
-                      fontSize: 14,
-                      lineHeight: 1.35,
-                      fontWeight: 400,
-                      display: "inline-block",
+                      backgroundColor: isUser ? "#95ec69" : "#FFFFFF",
+                      color: "#000000",
+                      padding: "10px 14px",
+                      borderRadius: 6,
+                      fontSize: "15px",
+                      lineHeight: 1.5,
+                      position: "relative",
+                      boxShadow: isUser ? "none" : "0 1px 2px rgba(0,0,0,0.05)",
                       wordBreak: "break-word",
                       whiteSpace: "pre-wrap",
-                      position: "relative",
                     }}
                     onContextMenu={(e) => {
                       e.preventDefault();
@@ -1246,25 +1239,33 @@ export default function ChatPage() {
                   </div>
                 </div>
 
-                {/* 自己的时间/已读区域 */}
+                {/* 右侧区域：自己头像占位 */}
                 {isUser && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      justifyContent: "flex-end",
-                      fontSize: "11px",
-                      color: "rgba(50,60,70,0.58)",
-                      lineHeight: 1.15,
-                      minWidth: "34px",
-                      marginLeft: 6,
-                      marginBottom: 3,
-                      flexShrink: 0,
-                    }}
-                  >
-                    <span>{message.read ? "已读" : ""}</span>
-                    <span>{message.time}</span>
+                  <div style={{ width: 40, marginLeft: 8 }}>
+                    {!isSameNext ? (
+                      <img
+                        src="/avatar.png"
+                        alt="avatar"
+                        style={{ width: 40, height: 40, borderRadius: 6 }}
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          const fallback = document.createElement("div");
+                          fallback.textContent = "我";
+                          fallback.style.width = "40px";
+                          fallback.style.height = "40px";
+                          fallback.style.borderRadius = "6px";
+                          fallback.style.background = "#e8f2ff";
+                          fallback.style.display = "flex";
+                          fallback.style.alignItems = "center";
+                          fallback.style.justifyContent = "center";
+                          fallback.style.fontSize = "14px";
+                          fallback.style.color = "#53657c";
+                          e.target.parentNode.appendChild(fallback);
+                        }}
+                      />
+                    ) : (
+                      <div style={{ width: 40 }} />
+                    )}
                   </div>
                 )}
               </div>
@@ -1277,7 +1278,7 @@ export default function ChatPage() {
           style={{
             display: "flex",
             alignItems: "center",
-            padding: "8px 10px",
+            padding: "8px 12px",
             borderTop: "1px solid #eee",
             background: "#fff",
             position: "relative",
@@ -1286,9 +1287,9 @@ export default function ChatPage() {
         >
           <button
             style={{
-              width: "34px",
-              height: "34px",
-              borderRadius: "999px",
+              width: "40px",
+              height: "40px",
+              borderRadius: "20px",
               border: "none",
               background: "transparent",
               fontSize: "22px",
@@ -1308,12 +1309,12 @@ export default function ChatPage() {
           <div
             style={{
               flex: 1,
-              borderRadius: 18,
+              borderRadius: 20,
               border: "1px solid #ddd",
               background: "#fff",
               display: "flex",
               alignItems: "center",
-              padding: "0 10px",
+              padding: "0 12px",
               marginLeft: 8,
               marginRight: 8,
             }}
@@ -1335,9 +1336,9 @@ export default function ChatPage() {
                 outline: "none",
                 resize: "none",
                 background: "transparent",
-                fontSize: 14,
+                fontSize: 15,
                 lineHeight: 1.4,
-                padding: "6px 0",
+                padding: "10px 0",
                 maxHeight: "88px",
                 fontFamily: "inherit",
                 color: "#222",
@@ -1350,7 +1351,7 @@ export default function ChatPage() {
                 setShowPlusPanel(false);
               }}
               style={{
-                fontSize: 20,
+                fontSize: 24,
                 marginRight: 0,
                 color: "#555",
                 cursor: "pointer",
@@ -1364,13 +1365,13 @@ export default function ChatPage() {
             type="button"
             onClick={sendMessage}
             style={{
-              height: "34px",
-              borderRadius: "17px",
+              height: "36px",
+              borderRadius: "18px",
               border: "none",
               background: "#95ec69",
-              color: "#1f1f1f",
-              fontSize: "13px",
-              padding: "0 12px",
+              color: "#000",
+              fontSize: "14px",
+              padding: "0 14px",
               cursor: "pointer",
             }}
           >
@@ -1388,8 +1389,8 @@ export default function ChatPage() {
               boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
               position: "relative",
               zIndex: 2,
-              marginLeft: 10,
-              marginRight: 10,
+              marginLeft: 12,
+              marginRight: 12,
               marginBottom: 10,
             }}
           >
@@ -1507,8 +1508,8 @@ export default function ChatPage() {
               padding: "14px 10px 8px",
               borderRadius: "14px",
               boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
-              marginLeft: 10,
-              marginRight: 10,
+              marginLeft: 12,
+              marginRight: 12,
               marginBottom: 10,
             }}
           >
@@ -1827,24 +1828,24 @@ export default function ChatPage() {
         .bubble-user::after {
           content: "";
           position: absolute;
-          right: -5px;
-          bottom: 6px;
+          right: -6px;
+          top: 10px;
           width: 0;
           height: 0;
-          border-left: 5px solid #06C755;
-          border-top: 5px solid transparent;
-          border-bottom: 5px solid transparent;
+          border-left: 6px solid #95ec69;
+          border-top: 6px solid transparent;
+          border-bottom: 6px solid transparent;
         }
         .bubble-bot::after {
           content: "";
           position: absolute;
-          left: -5px;
-          bottom: 6px;
+          left: -6px;
+          top: 10px;
           width: 0;
           height: 0;
-          border-right: 5px solid #ffffff;
-          border-top: 5px solid transparent;
-          border-bottom: 5px solid transparent;
+          border-right: 6px solid #ffffff;
+          border-top: 6px solid transparent;
+          border-bottom: 6px solid transparent;
         }
       `}</style>
     </div>
