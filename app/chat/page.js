@@ -114,108 +114,104 @@ export default function ChatPage() {
     return res.json();
   };
 
- const sendMessage = async () => {
-  const text = input.trim();
-  if (!text) return;
+  const sendMessage = async () => {
+    const text = input.trim();
+    if (!text) return;
 
-  const userMessage = {
-    id: `m-${Date.now()}`,
-    type: "message",
-    role: "me",
-    avatar: "我",
-    text,
-    time: getCurrentTime(),
-    read: true,
-  };
-
-setMessages((prev) => {
-  const updated = [...prev, userMessage];
-
-  fetch("/api/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ messages: updated }),
-  });
-
-  return updated;
-});
-  setInput("");
-
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-     body: JSON.stringify({
-      messages: [
-       { role: "user", content: text }
-       ]
-      }),
-      });
-
-     const data = await res.json();
-     const replies = Array.isArray(data?.replies)
-     ? data.replies
-     : splitAssistantReply(data?.reply || "");
-      if (!replies.length) throw new Error("AI returned empty replies");
-
-
-
-for (let i = 0; i < replies.length; i++) {
-  const text = replies[i];
-
-  setMessages((prev) => {
-  const updated = [
-    ...prev,
-    {
-      id: `m-${Date.now()}-${i}`,
+    const userMessage = {
+      id: `m-${Date.now()}`,
       type: "message",
-      role: "other",
-      avatar: "星",
+      role: "me",
+      avatar: "我",
       text,
-      thoughtSummary: data?.thoughtSummary || "他刚刚在想点什么",
-      thoughtFull: data?.thoughtFull || "",
-      time: getCurrentTime(),
-      read: true,
-    },
-  ];
-
-  fetch("/api/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ messages: updated }),
-  });
-
-  return updated;
-});
-
-  if (i < replies.length - 1) {
-    await new Promise((r) => setTimeout(r, 400));
-  }
-}
-
-     
-  } catch (err) {
-    console.error(err);
-
-    const errorMessage = {
-      id: `m-${Date.now()}-err`,
-      type: "message",
-      role: "other",
-      avatar: "系统",
-      text: "出错了，稍后再试",
       time: getCurrentTime(),
       read: true,
     };
 
-    setMessages((prev) => [...prev, errorMessage]);
-   }
-   };
+    setMessages((prev) => {
+      const updated = [...prev, userMessage];
+
+      fetch("/api/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: updated }),
+      });
+
+      return updated;
+    });
+    setInput("");
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: "user", content: text }
+          ]
+        }),
+      });
+
+      const data = await res.json();
+      const replies = Array.isArray(data?.replies)
+        ? data.replies
+        : splitAssistantReply(data?.reply || "");
+      if (!replies.length) throw new Error("AI returned empty replies");
+
+      for (let i = 0; i < replies.length; i++) {
+        const text = replies[i];
+
+        setMessages((prev) => {
+          const updated = [
+            ...prev,
+            {
+              id: `m-${Date.now()}-${i}`,
+              type: "message",
+              role: "other",
+              avatar: "星",
+              text,
+              thoughtSummary: data?.thoughtSummary || "他刚刚在想点什么",
+              thoughtFull: data?.thoughtFull || "",
+              time: getCurrentTime(),
+              read: true,
+            },
+          ];
+
+          fetch("/api/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ messages: updated }),
+          });
+
+          return updated;
+        });
+
+        if (i < replies.length - 1) {
+          await new Promise((r) => setTimeout(r, 400));
+        }
+      }
+    } catch (err) {
+      console.error(err);
+
+      const errorMessage = {
+        id: `m-${Date.now()}-err`,
+        type: "message",
+        role: "other",
+        avatar: "系统",
+        text: "出错了，稍后再试",
+        time: getCurrentTime(),
+        read: true,
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+  };
 
   const handleImageSelect = async (file, source = "照片") => {
     if (!file) return;
@@ -525,27 +521,253 @@ for (let i = 0; i < replies.length; i++) {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, showEmojiPanel, showPlusPanel]);
- useEffect(() => {
-  fetch("/api/messages")
-    .then(res => res.json())
-    .then(data => {
-      if (data.messages) {
-        setMessages(data.messages);
-      }
-    });
-}, []);
+
   useEffect(() => {
-}, [messages]);
- useEffect(() => {
-  const savedFavorites = localStorage.getItem("chat_favorites");
-  if (savedFavorites) {
-    setFavorites(JSON.parse(savedFavorites));
+    fetch("/api/messages")
+      .then(res => res.json())
+      .then(data => {
+        if (data.messages) {
+          setMessages(data.messages);
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    // 保留用于未来副作用
+  }, [messages]);
+
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem("chat_favorites");
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("chat_favorites", JSON.stringify(favorites));
+  }, [favorites]);
+
+  // 辅助函数：拆分AI回复
+  function splitAssistantReply(reply) {
+    if (!reply) return [];
+    return reply.split(/(?<=[。！？\n])/g).filter(s => s.trim());
   }
-}, []);
- useEffect(() => {
-  localStorage.setItem("chat_favorites", JSON.stringify(favorites));
-}, [favorites]);
-return (
+
+  // 气泡尾巴组件（LINE风格）
+  const BubbleTail = ({ side }) => {
+    const isLeft = side === "left";
+    return (
+      <div
+        style={{
+          position: "absolute",
+          bottom: "-6px",
+          width: "12px",
+          height: "12px",
+          backgroundColor: isLeft ? "#ffffff" : "#06C755",
+          transform: "rotate(45deg)",
+          borderRadius: "2px",
+          boxShadow: isLeft ? "1px 1px 1px rgba(0,0,0,0.05)" : "none",
+          [isLeft ? "left" : "right"]: "16px",
+          zIndex: 1,
+        }}
+      />
+    );
+  };
+
+  // 渲染对方消息（白色气泡，左侧）
+  const renderOtherMessage = (msg) => {
+    return (
+      <div
+        key={msg.id}
+        style={{
+          display: "flex",
+          justifyContent: "flex-start",
+          marginBottom: "14px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "8px",
+            maxWidth: "78%",
+          }}
+        >
+          <div
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "999px",
+              background: "#d8ecff",
+              border: "1px solid rgba(255,255,255,0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "14px",
+              color: "#53657c",
+              flexShrink: 0,
+            }}
+          >
+            {msg.avatar}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            }}
+          >
+            {msg.role === "other" && msg.thoughtSummary && (
+              <div
+                onClick={() => {
+                  setActiveThought(msg.thoughtFull || "他刚刚有点话没说出来。");
+                  setShowThoughtDrawer(true);
+                }}
+                style={{
+                  fontSize: "12px",
+                  color: "rgba(120,120,120,0.65)",
+                  marginBottom: "4px",
+                  lineHeight: 1.2,
+                  cursor: "pointer",
+                  paddingLeft: "4px",
+                }}
+              >
+                🩶 {msg.thoughtSummary}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: "8px",
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  backgroundColor: "#ffffff",
+                  color: "#1f1f1f",
+                  padding: "10px 14px",
+                  borderRadius: "20px",
+                  fontSize: "15px",
+                  lineHeight: 1.45,
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                  wordBreak: "break-word",
+                  whiteSpace: "pre-line",
+                  maxWidth: "100%",
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setActiveMessage(msg);
+                  setMenuPosition({ x: e.clientX, y: e.clientY });
+                  setShowMessageMenu(true);
+                }}
+              >
+                {msg.text}
+                <BubbleTail side="left" />
+              </div>
+
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "rgba(62,70,84,0.65)",
+                  marginBottom: "2px",
+                }}
+              >
+                {msg.time}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染自己消息（绿色气泡，右侧）
+  const renderMyMessage = (msg) => {
+    return (
+      <div
+        key={msg.id}
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: "14px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            gap: "6px",
+            maxWidth: "78%",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              justifyContent: "flex-end",
+              fontSize: "11px",
+              color: "rgba(62,70,84,0.65)",
+              lineHeight: 1.15,
+              minWidth: "34px",
+              marginBottom: "4px",
+            }}
+          >
+            <span>{msg.read ? "已读" : ""}</span>
+            <span>{msg.time}</span>
+          </div>
+
+          <div
+            style={{
+              position: "relative",
+              backgroundColor: "#06C755",
+              color: "#ffffff",
+              padding: "10px 14px",
+              borderRadius: "20px",
+              fontSize: "15px",
+              lineHeight: 1.45,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              wordBreak: "break-word",
+              whiteSpace: "pre-line",
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setActiveMessage(msg);
+              setMenuPosition({ x: e.clientX, y: e.clientY });
+              setShowMessageMenu(true);
+            }}
+          >
+            {msg.text}
+            <BubbleTail side="right" />
+          </div>
+
+          <div
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "999px",
+              background: "#e8f2ff",
+              border: "1px solid rgba(255,255,255,0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "14px",
+              color: "#53657c",
+              flexShrink: 0,
+            }}
+          >
+            我
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
     <div
       style={{
         minHeight: "100vh",
@@ -591,7 +813,6 @@ return (
           }}
         >
           <div style={{ fontSize: "26px", color: "#222", lineHeight: 1 }}>‹</div>
-
           <div
             style={{
               fontSize: "16px",
@@ -602,7 +823,6 @@ return (
           >
             沈星回
           </div>
-
           <div
             style={{
               display: "flex",
@@ -626,7 +846,8 @@ return (
             padding: "14px 10px 10px",
             boxSizing: "border-box",
           }}
-        >          {messages.map((item) => {
+        >
+          {messages.map((item) => {
             if (item.type === "date") {
               return (
                 <div
@@ -656,6 +877,7 @@ return (
             const msg = item;
             const isMe = msg.role === "me";
 
+            // 卡片类型 (自己发出的各种卡片消息)
             if (msg.type === "card" && isMe) {
               return (
                 <div
@@ -946,9 +1168,11 @@ return (
                           </div>
                         </div>
                       </div>
-                    )}                    {msg.cardType === "file" && (
+                    )}
+
+                    {msg.cardType === "file" && (
                       <div
-                      onClick={() => msg.url && window.open(msg.url, "_blank")}
+                        onClick={() => msg.url && window.open(msg.url, "_blank")}
                         style={{
                           width: "220px",
                           borderRadius: "18px",
@@ -1000,7 +1224,7 @@ return (
 
                     {msg.cardType === "music" && (
                       <div
-                      onClick={() => msg.url && window.open(msg.url, "_blank")}
+                        onClick={() => msg.url && window.open(msg.url, "_blank")}
                         style={{
                           width: "220px",
                           borderRadius: "18px",
@@ -1097,15 +1321,15 @@ return (
 
                     <div
                       style={{
-                        width: "32px",
-                        height: "32px",
+                        width: "36px",
+                        height: "36px",
                         borderRadius: "999px",
                         background: "#e8f2ff",
                         border: "1px solid rgba(255,255,255,0.7)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "13px",
+                        fontSize: "14px",
                         color: "#53657c",
                         flexShrink: 0,
                       }}
@@ -1117,193 +1341,17 @@ return (
               );
             }
 
-            if (isMe) {
-              return (
-                <div
-                  key={msg.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    marginBottom: "14px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-end",
-                      gap: "6px",
-                      maxWidth: "84%",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        justifyContent: "flex-end",
-                        fontSize: "11px",
-                        color: "rgba(62,70,84,0.58)",
-                        lineHeight: 1.15,
-                        minWidth: "34px",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      <span>{msg.read ? "已读" : ""}</span>
-                      <span>{msg.time}</span>
-                    </div>
-
-                    <div
-                      onContextMenu={(e) => {
-                     e.preventDefault();
-                     setActiveMessage(msg);
-                       setMenuPosition({ x: e.clientX, y: e.clientY }); 
-                      setShowMessageMenu(true);
-                     }}
-                      style={{
-                       background: "#95ec69",
-                       color: "#000",
-                       padding: "10px 14px",
-                       borderRadius: "16px 16px 4px 16px",
-                       fontSize: "15px",
-                       lineHeight: 1.4,
-                       boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-                        whiteSpace: "pre-line",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {msg.text}
-                    </div>
-
-                    <div
-                      style={{
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "999px",
-                        background: "#e8f2ff",
-                        border: "1px solid rgba(255,255,255,0.7)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "13px",
-                        color: "#53657c",
-                        flexShrink: 0,
-                      }}
-                    >
-                      我
-                    </div>
-                  </div>
-                </div>
-              );
+            // 普通文本消息
+            if (msg.type === "message") {
+              if (isMe) {
+                return renderMyMessage(msg);
+              } else {
+                return renderOtherMessage(msg);
+              }
             }
 
-            return (
-              <div
-                key={msg.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-start",
-                  marginBottom: "14px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "8px",
-                    maxWidth: "84%",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "999px",
-                      background: "#d8ecff",
-                      border: "1px solid rgba(255,255,255,0.7)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "13px",
-                      color: "#53657c",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {msg.avatar}
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    {msg.role === "other" && msg.thoughtSummary && (
-  <div
-    onClick={() => {
-      setActiveThought(
-        msg.thoughtFull || "他刚刚有点话没说出来。"
-      );
-      setShowThoughtDrawer(true);
-    }}
-    style={{
-      fontSize: "12px",
-      color: "rgba(120,120,120,0.45)",
-      marginBottom: "4px",
-      lineHeight: 1.2,
-      cursor: "pointer",
-    }}
-  >
-    🩶 {msg.thoughtSummary}
-  </div>
-)}
-                       
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-end",
-                        gap: "6px",
-                      }}
-                    >
-
-                      <div
-                        onContextMenu={(e) => {
-                        e.preventDefault();
-                       setActiveMessage(msg);
-                         setMenuPosition({ x: e.clientX, y: e.clientY }); 
-                        setShowMessageMenu(true);
-                       }}
-                        style={{
-                         background: "#fff",
-                         color: "#000",
-                         padding: "10px 14px",
-                         borderRadius: "16px 16px 16px 4px",
-                         fontSize: "15px",
-                         lineHeight: 1.4,
-                         boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                          whiteSpace: "pre-line",
-                          wordBreak: "break-word",
-                          minWidth: "80px",
-                        }}
-                      >
-                        
-                        {msg.text}
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: "11px",
-                          color: "rgba(62,70,84,0.58)",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        {msg.time}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
+            // 兜底（理论上不会执行到这里）
+            return null;
           })}
 
           <div ref={chatEndRef} />
@@ -1317,7 +1365,8 @@ return (
             borderTop: "1px solid rgba(0,0,0,0.05)",
             padding: "8px 10px 10px",
           }}
-        >          <div
+        >
+          <div
             style={{
               display: "flex",
               alignItems: "center",
@@ -1352,11 +1401,11 @@ return (
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-               sendMessage();
-               }
-               }}
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
                 placeholder="输入消息"
                 rows={1}
                 style={{
@@ -1387,26 +1436,26 @@ return (
             </div>
 
             <button
-  type="button"
-  onClick={sendMessage}
-  style={{
-    height: "34px",
-    borderRadius: "17px",
-    border: "none",
-    background: "#95ec69",
-    color: "#1f1f1f",
-    fontSize: "13px",
-    padding: "0 12px",
-    cursor: "pointer",
-    position: "relative",
-    zIndex: 50,
-    pointerEvents: "auto",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-  }}
->
-  发送
-</button>
+              type="button"
+              onClick={sendMessage}
+              style={{
+                height: "34px",
+                borderRadius: "17px",
+                border: "none",
+                background: "#95ec69",
+                color: "#1f1f1f",
+                fontSize: "13px",
+                padding: "0 12px",
+                cursor: "pointer",
+                position: "relative",
+                zIndex: 50,
+                pointerEvents: "auto",
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              发送
+            </button>
           </div>
 
           {showEmojiPanel && (
@@ -1633,29 +1682,30 @@ return (
           />
         </div>
 
-       
-{previewImage && (
-  <div
-    onClick={() => setPreviewImage(null)}
-    style={{
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.9)",
-      zIndex: 999,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-  >
-    <img
-      src={previewImage}
-      style={{
-        maxWidth: "100%",
-        maxHeight: "100%",
-      }}
-    />
-  </div>
-)}
+        {previewImage && (
+          <div
+            onClick={() => setPreviewImage(null)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.9)",
+              zIndex: 999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <img
+              src={previewImage}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+              }}
+              alt="预览"
+            />
+          </div>
+        )}
+
         {openThought ? (
           <>
             <div
@@ -1746,131 +1796,109 @@ return (
             </div>
           </>
         ) : null}
+
         {showMessageMenu && (
-  <div style={{
-       position: "fixed",
-       top: menuPosition.y,
-       left: menuPosition.x,
-       transform: "translate(-50%, -100%)",
-    background: "#fff",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-    padding: "10px",
-    zIndex: 9999
-     }}>
-    <div
-      onClick={() => {
-        setFavorites(prev => [...prev, activeMessage]);
-        setShowMessageMenu(false);
-      }}
-      style={{ padding: "8px 16px", cursor: "pointer" }}
-    >
-      ⭐ 收藏
-    </div>
-
-    <div
-      onClick={() => {
-        setMessages(prev => prev.filter(m => m.id !== activeMessage.id));
-        setShowMessageMenu(false);
-      }}
-      style={{ padding: "8px 16px", cursor: "pointer", color: "red" }}
-    >
-      🗑 删除
-    </div>
-   </div>
-   )}
-
-        {previewImage && (
           <div
-            onClick={() => setPreviewImage(null)}
             style={{
               position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.9)",
-              zIndex: 999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              top: menuPosition.y,
+              left: menuPosition.x,
+              transform: "translate(-50%, -100%)",
+              background: "#fff",
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              padding: "10px",
+              zIndex: 9999,
             }}
           >
-            <img
-              src={previewImage}
-              alt="preview"
-              style={{
-                maxWidth: "100%",
-                maxHeight: "100%",
-                objectFit: "contain",
+            <div
+              onClick={() => {
+                setFavorites(prev => [...prev, activeMessage]);
+                setShowMessageMenu(false);
               }}
-            />
+              style={{ padding: "8px 16px", cursor: "pointer" }}
+            >
+              ⭐ 收藏
+            </div>
+
+            <div
+              onClick={() => {
+                setMessages(prev => prev.filter(m => m.id !== activeMessage.id));
+                setShowMessageMenu(false);
+              }}
+              style={{ padding: "8px 16px", cursor: "pointer", color: "red" }}
+            >
+              🗑 删除
+            </div>
           </div>
         )}
+
+        {showThoughtDrawer && (
+          <>
+            <div
+              onClick={() => setShowThoughtDrawer(false)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.22)",
+                zIndex: 999,
+              }}
+            />
+
+            <div
+              style={{
+                position: "fixed",
+                left: "50%",
+                bottom: 0,
+                transform: "translateX(-50%)",
+                width: "100%",
+                maxWidth: "430px",
+                background: "#fff",
+                borderTopLeftRadius: "18px",
+                borderTopRightRadius: "18px",
+                padding: "14px 16px 24px",
+                boxShadow: "0 -8px 30px rgba(0,0,0,0.12)",
+                zIndex: 1000,
+              }}
+            >
+              <div
+                style={{
+                  width: "42px",
+                  height: "4px",
+                  borderRadius: "999px",
+                  background: "rgba(0,0,0,0.12)",
+                  margin: "0 auto 12px",
+                }}
+              />
+
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: "rgba(120,120,120,0.9)",
+                  marginBottom: "10px",
+                }}
+              >
+                🩶 他刚刚在想什么
+              </div>
+
+              <div
+                style={{
+                  fontSize: "14px",
+                  lineHeight: 1.6,
+                  color: "#333",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {activeThought}
+              </div>
+            </div>
+          </>
+        )}
       </div>
-      {showThoughtDrawer && (
-  <>
-    <div
-      onClick={() => setShowThoughtDrawer(false)}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.22)",
-        zIndex: 999,
-      }}
-    />
-
-    <div
-      style={{
-        position: "fixed",
-        left: "50%",
-        bottom: 0,
-        transform: "translateX(-50%)",
-        width: "100%",
-        maxWidth: "430px",
-        background: "#fff",
-        borderTopLeftRadius: "18px",
-        borderTopRightRadius: "18px",
-        padding: "14px 16px 24px",
-        boxShadow: "0 -8px 30px rgba(0,0,0,0.12)",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          width: "42px",
-          height: "4px",
-          borderRadius: "999px",
-          background: "rgba(0,0,0,0.12)",
-          margin: "0 auto 12px",
-        }}
-      />
-
-      <div
-        style={{
-          fontSize: "13px",
-          color: "rgba(120,120,120,0.9)",
-          marginBottom: "10px",
-        }}
-      >
-        🩶 他刚刚在想什么
-      </div>
-
-      <div
-        style={{
-          fontSize: "14px",
-          lineHeight: 1.6,
-          color: "#333",
-          whiteSpace: "pre-wrap",
-        }}
-      >
-        {activeThought}
-      </div>
-    </div>
-  </>
-)}
-
-
     </div>
   );
 }
+
 const leftArrowBtnStyle = {
   width: "34px",
   height: "34px",
@@ -1891,16 +1919,5 @@ const smallIconBtnStyle = {
   background: "transparent",
   fontSize: "18px",
   color: "#444",
-  cursor: "pointer",
-};
-
-const sendBtnStyle = {
-  height: "34px",
-  borderRadius: "17px",
-  border: "none",
-  background: "#95ec69",
-  color: "#1f1f1f",
-  fontSize: "13px",
-  padding: "0 12px",
   cursor: "pointer",
 };
