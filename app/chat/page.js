@@ -557,7 +557,7 @@ export default function ChatPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#f3f3f3",
+        background: "#F0F2F5",
         display: "flex",
         justifyContent: "center",
         fontFamily: '-apple-system, BlinkMacSystemFont, "Apple Color Emoji", sans-serif',
@@ -570,7 +570,7 @@ export default function ChatPage() {
           minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
-          background: "#f3f3f3",
+          background: "#F0F2F5",
           position: "relative",
           overflow: "hidden",
         }}
@@ -653,35 +653,60 @@ export default function ChatPage() {
               );
             }
 
+            const isUser = message.role === "me";
             const prev = messages[idx - 1];
             const next = messages[idx + 1];
             const isSamePrev = prev && prev.role === message.role;
             const isSameNext = next && next.role === message.role;
-            const isUser = message.role === "me";
 
-            // 卡片消息（自己发送的特殊卡片）保持原有样式但调整间距和对齐
+            // 卡片消息（自己发送的特殊卡片）保持原有样式，但为了对齐也加上头像占位
             if (message.type === "card" && isUser) {
               return (
                 <div
                   key={message.id}
                   style={{
                     display: "flex",
-                    flexDirection: "row",
-                    justifyContent: "flex-end",
+                    flexDirection: "row-reverse",
                     padding: "8px 12px",
                     width: "100%",
                     boxSizing: "border-box",
+                    alignItems: "flex-start",
                   }}
                 >
-                  {/* 左侧占位（保持对齐） */}
-                  <div style={{ width: 40, marginRight: 8 }} />
-                  
+                  {/* 头像 */}
+                  <div
+                    style={{
+                      width: 42,
+                      height: 42,
+                      flexShrink: 0,
+                      borderRadius: "10px",
+                      overflow: "hidden",
+                      backgroundColor: "#e8f2ff",
+                      marginLeft: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "14px",
+                        color: "#53657c",
+                      }}
+                    >
+                      我
+                    </div>
+                  </div>
+
                   <div
                     style={{
                       display: "flex",
                       alignItems: "flex-end",
                       gap: "6px",
-                      maxWidth: "84%",
+                      maxWidth: "70%",
+                      flexDirection: "column",
                     }}
                   >
                     <div
@@ -1111,73 +1136,46 @@ export default function ChatPage() {
                         </div>
                       </div>
                     )}
-
-                    <div
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "999px",
-                        background: "#e8f2ff",
-                        border: "1px solid rgba(255,255,255,0.7)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "14px",
-                        color: "#53657c",
-                        flexShrink: 0,
-                      }}
-                    >
-                      我
-                    </div>
                   </div>
                 </div>
               );
             }
 
-            // 普通文本消息（LINE风格，占位对齐）
+            // 普通文本消息：每一条都有头像，圆润气泡
             return (
               <div
                 key={message.id}
                 style={{
                   display: "flex",
-                  flexDirection: "row",
-                  justifyContent: isUser ? "flex-end" : "flex-start",
+                  flexDirection: isUser ? "row-reverse" : "row",
                   padding: "8px 12px",
                   width: "100%",
                   boxSizing: "border-box",
+                  alignItems: "flex-start",
                 }}
               >
-                {/* 左侧区域：对方头像占位 */}
-                {!isUser && (
-                  <div style={{ width: 40, marginRight: 8, display: "flex", justifyContent: "center" }}>
-                    {!isSameNext ? (
-                      <img
-                        src="/avatar.png"
-                        alt="avatar"
-                        style={{ width: 40, height: 40, borderRadius: 6 }}
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                          const fallback = document.createElement("div");
-                          fallback.textContent = message.avatar || "星";
-                          fallback.style.width = "40px";
-                          fallback.style.height = "40px";
-                          fallback.style.borderRadius = "6px";
-                          fallback.style.background = "#d8ecff";
-                          fallback.style.display = "flex";
-                          fallback.style.alignItems = "center";
-                          fallback.style.justifyContent = "center";
-                          fallback.style.fontSize = "14px";
-                          fallback.style.color = "#53657c";
-                          e.target.parentNode.appendChild(fallback);
-                        }}
-                      />
-                    ) : (
-                      <div style={{ width: 40 }} />
-                    )}
-                  </div>
-                )}
+                {/* 头像：始终显示，圆角矩形 10px */}
+                <div
+                  style={{
+                    width: 42,
+                    height: 42,
+                    flexShrink: 0,
+                    borderRadius: "10px",
+                    overflow: "hidden",
+                    backgroundColor: isUser ? "#e8f2ff" : "#d8ecff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "14px",
+                    color: "#53657c",
+                    marginLeft: isUser ? 12 : 0,
+                    marginRight: isUser ? 0 : 12,
+                  }}
+                >
+                  {isUser ? "我" : message.avatar === "星" ? "⭐" : message.avatar}
+                </div>
 
-                {/* 消息本体容器 */}
+                {/* 气泡与名字区域 */}
                 <div
                   style={{
                     display: "flex",
@@ -1186,12 +1184,18 @@ export default function ChatPage() {
                     maxWidth: "70%",
                   }}
                 >
-                  {/* 对方名称：只在消息组第一条显示 */}
-                  {!isUser && !isSamePrev && (
-                    <span style={{ fontSize: 12, color: "#888", marginBottom: 4, marginLeft: 2 }}>
-                      {message.avatar === "星" ? "沈星回" : message.avatar}
-                    </span>
-                  )}
+                  {/* 名字：只在需要时显示（这里为了简洁，默认显示） */}
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      color: "#888",
+                      marginBottom: "4px",
+                      marginLeft: isUser ? 0 : "4px",
+                      marginRight: isUser ? "4px" : 0,
+                    }}
+                  >
+                    {isUser ? "我" : (message.avatar === "星" ? "沈星回" : message.avatar)}
+                  </span>
 
                   {/* 思考摘要（仅对方） */}
                   {!isUser && message.thoughtSummary && (
@@ -1214,17 +1218,19 @@ export default function ChatPage() {
                     </div>
                   )}
 
+                  {/* 气泡本体：不对称圆角实现“指向感” */}
                   <div
-                    className={isUser ? "bubble-user" : "bubble-bot"}
                     style={{
-                      backgroundColor: isUser ? "#95ec69" : "#FFFFFF",
-                      color: "#000000",
-                      padding: "10px 14px",
-                      borderRadius: 6,
+                      backgroundColor: isUser ? "#95EC69" : "#FFFFFF",
+                      color: "#1a1a1a",
+                      padding: "10px 16px",
+                      borderRadius: "18px",
+                      borderTopRightRadius: isUser ? "4px" : "18px",
+                      borderTopLeftRadius: isUser ? "18px" : "4px",
                       fontSize: "15px",
                       lineHeight: 1.5,
                       position: "relative",
-                      boxShadow: isUser ? "none" : "0 1px 2px rgba(0,0,0,0.05)",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
                       wordBreak: "break-word",
                       whiteSpace: "pre-wrap",
                     }}
@@ -1238,36 +1244,6 @@ export default function ChatPage() {
                     {message.text}
                   </div>
                 </div>
-
-                {/* 右侧区域：自己头像占位 */}
-                {isUser && (
-                  <div style={{ width: 40, marginLeft: 8 }}>
-                    {!isSameNext ? (
-                      <img
-                        src="/avatar.png"
-                        alt="avatar"
-                        style={{ width: 40, height: 40, borderRadius: 6 }}
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                          const fallback = document.createElement("div");
-                          fallback.textContent = "我";
-                          fallback.style.width = "40px";
-                          fallback.style.height = "40px";
-                          fallback.style.borderRadius = "6px";
-                          fallback.style.background = "#e8f2ff";
-                          fallback.style.display = "flex";
-                          fallback.style.alignItems = "center";
-                          fallback.style.justifyContent = "center";
-                          fallback.style.fontSize = "14px";
-                          fallback.style.color = "#53657c";
-                          e.target.parentNode.appendChild(fallback);
-                        }}
-                      />
-                    ) : (
-                      <div style={{ width: 40 }} />
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -1823,31 +1799,6 @@ export default function ChatPage() {
           </>
         )}
       </div>
-
-      <style jsx>{`
-        .bubble-user::after {
-          content: "";
-          position: absolute;
-          right: -6px;
-          top: 10px;
-          width: 0;
-          height: 0;
-          border-left: 6px solid #95ec69;
-          border-top: 6px solid transparent;
-          border-bottom: 6px solid transparent;
-        }
-        .bubble-bot::after {
-          content: "";
-          position: absolute;
-          left: -6px;
-          top: 10px;
-          width: 0;
-          height: 0;
-          border-right: 6px solid #ffffff;
-          border-top: 6px solid transparent;
-          border-bottom: 6px solid transparent;
-        }
-      `}</style>
     </div>
   );
 }
