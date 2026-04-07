@@ -163,7 +163,7 @@ export default function ChatPage() {
       if (!replies.length) throw new Error("AI returned empty replies");
 
       for (let i = 0; i < replies.length; i++) {
-        const text = replies[i];
+        const replyText = replies[i];
 
         setMessages((prev) => {
           const updated = [
@@ -173,7 +173,7 @@ export default function ChatPage() {
               type: "message",
               role: "other",
               avatar: "星",
-              text,
+              text: replyText,
               thoughtSummary: data?.thoughtSummary || "他刚刚在想点什么",
               thoughtFull: data?.thoughtFull || "",
               time: getCurrentTime(),
@@ -667,21 +667,21 @@ export default function ChatPage() {
             const next = messages[idx + 1];
             const isSamePrev = prev && prev.role === message.role;
             const isSameNext = next && next.role === message.role;
-
             const isUser = message.role === "me";
 
-            // 卡片消息（自己发出的特殊卡片）单独处理，保持原有样式但调整分组间距
+            // 卡片消息（自己发送的特殊卡片）
             if (message.type === "card" && isUser) {
               return (
                 <div
                   key={message.id}
                   style={{
                     display: "flex",
-                    justifyContent: "flex-end",
+                    flexDirection: "row-reverse",
+                    alignItems: "flex-end",
                     marginTop: isSamePrev ? 4 : 14,
-                    marginBottom: isSameNext ? 2 : 4,
                     paddingLeft: 10,
                     paddingRight: 10,
+                    marginBottom: 2,
                   }}
                 >
                   <div
@@ -1142,7 +1142,7 @@ export default function ChatPage() {
               );
             }
 
-            // 普通文本消息（应用分组、头像、气泡样式）
+            // 普通文本消息（LINE风格）
             return (
               <div
                 key={message.id}
@@ -1151,13 +1151,13 @@ export default function ChatPage() {
                   flexDirection: isUser ? "row-reverse" : "row",
                   alignItems: "flex-end",
                   marginTop: isSamePrev ? 4 : 14,
-                  marginBottom: isSameNext ? 2 : 4,
                   paddingLeft: 10,
                   paddingRight: 10,
+                  marginBottom: 2,
                 }}
               >
-                {/* 头像区域：只显示在对方消息组的最后一条 */}
-                {!isUser && !isSameNext && (
+                {/* 对方头像：只显示在对方消息组的最后一条 */}
+                {!isUser && !isSamePrev && (
                   <img
                     src="/avatar.png"
                     alt="avatar"
@@ -1170,8 +1170,7 @@ export default function ChatPage() {
                     }}
                     onError={(e) => {
                       e.target.style.display = "none";
-                      // 如果图片加载失败，显示文字回退
-                      const parent = e.target.parentNode;
+                      // fallback: 显示文字
                       const fallback = document.createElement("div");
                       fallback.textContent = message.avatar || "星";
                       fallback.style.width = "34px";
@@ -1185,13 +1184,12 @@ export default function ChatPage() {
                       fallback.style.fontSize = "14px";
                       fallback.style.color = "#53657c";
                       fallback.style.marginRight = "6px";
-                      parent.insertBefore(fallback, e.target);
-                      e.target.remove();
+                      e.target.parentNode.insertBefore(fallback, e.target);
                     }}
                   />
                 )}
 
-                {/* 消息内容区域：包括思考摘要和气泡 */}
+                {/* 气泡容器（含思考摘要） */}
                 <div
                   style={{
                     display: "flex",
@@ -1200,7 +1198,7 @@ export default function ChatPage() {
                     maxWidth: "66%",
                   }}
                 >
-                  {/* 思考摘要（仅对方） */}
+                  {/* 对方思考摘要 */}
                   {!isUser && message.thoughtSummary && (
                     <div
                       onClick={() => {
@@ -1213,8 +1211,8 @@ export default function ChatPage() {
                         marginBottom: "4px",
                         lineHeight: 1.2,
                         cursor: "pointer",
-                        paddingLeft: "4px",
-                        paddingRight: "4px",
+                        paddingLeft: 4,
+                        paddingRight: 4,
                       }}
                     >
                       🩶 {message.thoughtSummary}
@@ -1246,11 +1244,9 @@ export default function ChatPage() {
                   >
                     {message.text}
                   </div>
-
-                  {/* 时间（仅自己消息显示在气泡下方外侧，这里为了简洁，时间和已读放在右侧独立区域，保持原有习惯） */}
                 </div>
 
-                {/* 已读/时间区域（仅自己） */}
+                {/* 自己的时间/已读区域 */}
                 {isUser && (
                   <div
                     style={{
@@ -1279,332 +1275,339 @@ export default function ChatPage() {
 
         <div
           style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "8px 10px",
+            borderTop: "1px solid #eee",
+            background: "#fff",
             position: "relative",
             zIndex: 2,
-            background: "#fff",
-            borderTop: "1px solid #eee",
-            padding: "8px 10px",
           }}
         >
+          <button
+            style={{
+              width: "34px",
+              height: "34px",
+              borderRadius: "999px",
+              border: "none",
+              background: "transparent",
+              fontSize: "22px",
+              lineHeight: 1,
+              color: "#333",
+              cursor: "pointer",
+            }}
+            onClick={() => {
+              setShowPlusPanel((prev) => !prev);
+              setShowEmojiPanel(false);
+            }}
+            title="更多功能"
+          >
+            +
+          </button>
+
           <div
             style={{
+              flex: 1,
+              borderRadius: 18,
+              border: "1px solid #ddd",
+              background: "#fff",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              padding: "0 10px",
+              marginLeft: 8,
+              marginRight: 8,
             }}
           >
-            <button
-              style={leftArrowBtnStyle}
-              onClick={() => {
-                setShowPlusPanel((prev) => !prev);
-                setShowEmojiPanel(false);
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
               }}
-              title="更多功能"
-            >
-              +
-            </button>
-
-            <div
+              placeholder="输入消息"
+              rows={1}
               style={{
                 flex: 1,
-                borderRadius: 18,
-                border: "1px solid #ddd",
-                background: "#f7f7f7",
-                display: "flex",
-                alignItems: "center",
-                padding: "0 10px",
-                boxSizing: "border-box",
-              }}
-            >
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                placeholder="输入消息"
-                rows={1}
-                style={{
-                  flex: 1,
-                  border: "none",
-                  outline: "none",
-                  resize: "none",
-                  background: "transparent",
-                  fontSize: 14,
-                  lineHeight: 1.4,
-                  paddingTop: "6px",
-                  paddingBottom: "6px",
-                  maxHeight: "88px",
-                  fontFamily: "inherit",
-                  color: "#222",
-                }}
-              />
-
-              <div
-                onClick={() => {
-                  setShowEmojiPanel((prev) => !prev);
-                  setShowPlusPanel(false);
-                }}
-                style={{
-                  fontSize: 20,
-                  marginRight: 0,
-                  color: "#555",
-                  cursor: "pointer",
-                }}
-              >
-                🙂
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={sendMessage}
-              style={{
-                height: "34px",
-                borderRadius: "17px",
                 border: "none",
-                background: "#95ec69",
-                color: "#1f1f1f",
-                fontSize: "13px",
-                padding: "0 12px",
+                outline: "none",
+                resize: "none",
+                background: "transparent",
+                fontSize: 14,
+                lineHeight: 1.4,
+                padding: "6px 0",
+                maxHeight: "88px",
+                fontFamily: "inherit",
+                color: "#222",
+              }}
+            />
+
+            <div
+              onClick={() => {
+                setShowEmojiPanel((prev) => !prev);
+                setShowPlusPanel(false);
+              }}
+              style={{
+                fontSize: 20,
+                marginRight: 0,
+                color: "#555",
                 cursor: "pointer",
-                position: "relative",
-                zIndex: 50,
-                pointerEvents: "auto",
-                touchAction: "manipulation",
-                WebkitTapHighlightColor: "transparent",
               }}
             >
-              发送
-            </button>
+              🙂
+            </div>
           </div>
 
-          {showEmojiPanel && (
+          <button
+            type="button"
+            onClick={sendMessage}
+            style={{
+              height: "34px",
+              borderRadius: "17px",
+              border: "none",
+              background: "#95ec69",
+              color: "#1f1f1f",
+              fontSize: "13px",
+              padding: "0 12px",
+              cursor: "pointer",
+            }}
+          >
+            发送
+          </button>
+        </div>
+
+        {showEmojiPanel && (
+          <div
+            style={{
+              marginTop: "10px",
+              padding: "12px",
+              background: "#fff",
+              borderRadius: "14px",
+              boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
+              position: "relative",
+              zIndex: 2,
+              marginLeft: 10,
+              marginRight: 10,
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                marginBottom: "10px",
+                overflowX: "auto",
+              }}
+            >
+              {Object.entries(emojiTabs).map(([key, tab]) => (
+                <button
+                  key={key}
+                  onClick={() => setSelectedEmojiTab(key)}
+                  style={{
+                    border: "none",
+                    background:
+                      selectedEmojiTab === key ? "#f0f0f0" : "transparent",
+                    borderRadius: "10px",
+                    padding: "6px 10px",
+                    fontSize: "12px",
+                    color: "#555",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div
+              style={{
+                fontSize: "12px",
+                color: "#777",
+                marginBottom: "8px",
+              }}
+            >
+              最近使用
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(6, 1fr)",
+                gap: "10px",
+                marginBottom: "12px",
+              }}
+            >
+              {recentEmojis.map((e, i) => (
+                <div
+                  key={i}
+                  onClick={() => addEmoji(e)}
+                  style={{
+                    fontSize: "22px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  {e}
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                fontSize: "12px",
+                color: "#777",
+                marginBottom: "8px",
+              }}
+            >
+              {emojiTabs[selectedEmojiTab].label}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(6, 1fr)",
+                gap: "10px",
+              }}
+            >
+              {emojiTabs[selectedEmojiTab].items.map((e, i) => (
+                <div
+                  key={i}
+                  onClick={() => addEmoji(e)}
+                  style={{
+                    fontSize: "22px",
+                    textAlign: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  {e}
+                </div>
+              ))}
+            </div>
+
             <div
               style={{
                 marginTop: "10px",
-                padding: "12px",
-                background: "#fff",
-                borderRadius: "14px",
-                boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
+                fontSize: "12px",
+                color: "#888",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  marginBottom: "10px",
-                  overflowX: "auto",
-                }}
-              >
-                {Object.entries(emojiTabs).map(([key, tab]) => (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedEmojiTab(key)}
+              + 添加表情包（以后接入）
+            </div>
+          </div>
+        )}
+
+        {showPlusPanel && (
+          <div
+            style={{
+              marginTop: "10px",
+              background: "#fff",
+              padding: "14px 10px 8px",
+              borderRadius: "14px",
+              boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
+              marginLeft: 10,
+              marginRight: 10,
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: "14px 8px",
+              }}
+            >
+              {plusActions.map((action) => (
+                <div
+                  key={action.key}
+                  onClick={() => sendPlusActionMessage(action)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div
                     style={{
-                      border: "none",
-                      background:
-                        selectedEmojiTab === key ? "#f0f0f0" : "transparent",
-                      borderRadius: "10px",
-                      padding: "6px 10px",
+                      width: "52px",
+                      height: "52px",
+                      borderRadius: "16px",
+                      background: "#f7f7f7",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "22px",
+                      marginBottom: "6px",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    {action.icon}
+                  </div>
+                  <div
+                    style={{
                       fontSize: "12px",
                       color: "#555",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#777",
-                  marginBottom: "8px",
-                }}
-              >
-                最近使用
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(6, 1fr)",
-                  gap: "10px",
-                  marginBottom: "12px",
-                }}
-              >
-                {recentEmojis.map((e, i) => (
-                  <div
-                    key={i}
-                    onClick={() => addEmoji(e)}
-                    style={{
-                      fontSize: "22px",
                       textAlign: "center",
-                      cursor: "pointer",
                     }}
                   >
-                    {e}
+                    {action.label}
                   </div>
-                ))}
-              </div>
-
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#777",
-                  marginBottom: "8px",
-                }}
-              >
-                {emojiTabs[selectedEmojiTab].label}
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(6, 1fr)",
-                  gap: "10px",
-                }}
-              >
-                {emojiTabs[selectedEmojiTab].items.map((e, i) => (
-                  <div
-                    key={i}
-                    onClick={() => addEmoji(e)}
-                    style={{
-                      fontSize: "22px",
-                      textAlign: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {e}
-                  </div>
-                ))}
-              </div>
-
-              <div
-                style={{
-                  marginTop: "10px",
-                  fontSize: "12px",
-                  color: "#888",
-                }}
-              >
-                + 添加表情包（以后接入）
-              </div>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {showPlusPanel && (
-            <div
-              style={{
-                marginTop: "10px",
-                background: "#fff",
-                padding: "14px 10px 8px",
-                borderRadius: "14px",
-                boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
-              }}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "14px 8px",
-                }}
-              >
-                {plusActions.map((action) => (
-                  <div
-                    key={action.key}
-                    onClick={() => sendPlusActionMessage(action)}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "52px",
-                        height: "52px",
-                        borderRadius: "16px",
-                        background: "#f7f7f7",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "22px",
-                        marginBottom: "6px",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-                      }}
-                    >
-                      {action.icon}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#555",
-                        textAlign: "center",
-                      }}
-                    >
-                      {action.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleImageSelect(file, "照片");
+            e.target.value = "";
+          }}
+        />
 
-          <input
-            ref={photoInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleImageSelect(file, "照片");
-              e.target.value = "";
-            }}
-          />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleImageSelect(file, "拍摄");
+            e.target.value = "";
+          }}
+        />
 
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleImageSelect(file, "拍摄");
-              e.target.value = "";
-            }}
-          />
+        <input
+          ref={fileInputRef}
+          type="file"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileUpload(file, "file");
+            e.target.value = "";
+          }}
+        />
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileUpload(file, "file");
-              e.target.value = "";
-            }}
-          />
-
-          <input
-            ref={musicInputRef}
-            type="file"
-            accept="audio/*"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileUpload(file, "music");
-              e.target.value = "";
-            }}
-          />
-        </div>
+        <input
+          ref={musicInputRef}
+          type="file"
+          accept="audio/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileUpload(file, "music");
+            e.target.value = "";
+          }}
+        />
 
         {previewImage && (
           <div
@@ -1847,15 +1850,3 @@ export default function ChatPage() {
     </div>
   );
 }
-
-const leftArrowBtnStyle = {
-  width: "34px",
-  height: "34px",
-  borderRadius: "999px",
-  border: "none",
-  background: "transparent",
-  fontSize: "22px",
-  lineHeight: 1,
-  color: "#333",
-  cursor: "pointer",
-};
