@@ -556,19 +556,24 @@ export default function ChatPage() {
   // 气泡尾巴组件（LINE风格）
   const BubbleTail = ({ side }) => {
     const isLeft = side === "left";
+
     return (
       <div
         style={{
           position: "absolute",
-          bottom: "-6px",
-          width: "12px",
-          height: "12px",
-          backgroundColor: isLeft ? "#ffffff" : "#06C755",
-          transform: "rotate(45deg)",
-          borderRadius: "2px",
-          boxShadow: isLeft ? "1px 1px 1px rgba(0,0,0,0.05)" : "none",
-          [isLeft ? "left" : "right"]: "16px",
-          zIndex: 1,
+          bottom: "6px",
+          width: "14px",
+          height: "14px",
+          background: isLeft ? "#ffffff" : "#06C755",
+          [isLeft ? "left" : "right"]: "-6px",
+          borderRadius: isLeft
+            ? "0 0 0 12px"
+            : "0 0 12px 0",
+          transform: isLeft
+            ? "rotate(8deg)"
+            : "rotate(-8deg)",
+          boxShadow: isLeft ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+          zIndex: 0,
         }}
       />
     );
@@ -582,7 +587,7 @@ export default function ChatPage() {
         style={{
           display: "flex",
           justifyContent: "flex-start",
-          marginBottom: "14px",
+          marginBottom: "10px",
         }}
       >
         <div
@@ -590,7 +595,7 @@ export default function ChatPage() {
             display: "flex",
             alignItems: "flex-start",
             gap: "8px",
-            maxWidth: "78%",
+            maxWidth: "82%",
           }}
         >
           <div
@@ -616,6 +621,7 @@ export default function ChatPage() {
               display: "flex",
               flexDirection: "column",
               alignItems: "flex-start",
+              minWidth: 0,
             }}
           >
             {msg.role === "other" && msg.thoughtSummary && (
@@ -641,22 +647,26 @@ export default function ChatPage() {
               style={{
                 display: "flex",
                 alignItems: "flex-end",
-                gap: "8px",
+                gap: "6px",
+                minWidth: 0,
               }}
             >
               <div
                 style={{
                   position: "relative",
-                  backgroundColor: "#ffffff",
+                  display: "inline-block",
+                  maxWidth: "100%",
+                  minWidth: "44px",
+                  background: "#ffffff",
                   color: "#1f1f1f",
-                  padding: "10px 14px",
-                  borderRadius: "20px",
-                  fontSize: "15px",
-                  lineHeight: 1.45,
+                  padding: "11px 14px",
+                  borderRadius: "18px",
+                  fontSize: "16px",
+                  lineHeight: 1.42,
                   boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                   wordBreak: "break-word",
-                  whiteSpace: "pre-line",
-                  maxWidth: "100%",
+                  whiteSpace: "pre-wrap",
+                  zIndex: 1,
                 }}
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -665,7 +675,7 @@ export default function ChatPage() {
                   setShowMessageMenu(true);
                 }}
               >
-                {msg.text}
+                <span style={{ position: "relative", zIndex: 2 }}>{msg.text}</span>
                 <BubbleTail side="left" />
               </div>
 
@@ -674,6 +684,7 @@ export default function ChatPage() {
                   fontSize: "11px",
                   color: "rgba(62,70,84,0.65)",
                   marginBottom: "2px",
+                  flexShrink: 0,
                 }}
               >
                 {msg.time}
@@ -693,7 +704,7 @@ export default function ChatPage() {
         style={{
           display: "flex",
           justifyContent: "flex-end",
-          marginBottom: "14px",
+          marginBottom: "10px",
         }}
       >
         <div
@@ -701,7 +712,7 @@ export default function ChatPage() {
             display: "flex",
             alignItems: "flex-end",
             gap: "6px",
-            maxWidth: "78%",
+            maxWidth: "82%",
           }}
         >
           <div
@@ -714,7 +725,8 @@ export default function ChatPage() {
               color: "rgba(62,70,84,0.65)",
               lineHeight: 1.15,
               minWidth: "34px",
-              marginBottom: "4px",
+              marginBottom: "3px",
+              flexShrink: 0,
             }}
           >
             <span>{msg.read ? "已读" : ""}</span>
@@ -724,15 +736,19 @@ export default function ChatPage() {
           <div
             style={{
               position: "relative",
-              backgroundColor: "#06C755",
+              display: "inline-block",
+              maxWidth: "100%",
+              minWidth: "44px",
+              background: "#06C755",
               color: "#ffffff",
-              padding: "10px 14px",
-              borderRadius: "20px",
-              fontSize: "15px",
-              lineHeight: 1.45,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              padding: "11px 14px",
+              borderRadius: "18px",
+              fontSize: "16px",
+              lineHeight: 1.42,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
               wordBreak: "break-word",
-              whiteSpace: "pre-line",
+              whiteSpace: "pre-wrap",
+              zIndex: 1,
             }}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -741,7 +757,7 @@ export default function ChatPage() {
               setShowMessageMenu(true);
             }}
           >
-            {msg.text}
+            <span style={{ position: "relative", zIndex: 2 }}>{msg.text}</span>
             <BubbleTail side="right" />
           </div>
 
