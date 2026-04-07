@@ -659,7 +659,7 @@ export default function ChatPage() {
             const isSamePrev = prev && prev.role === message.role;
             const isSameNext = next && next.role === message.role;
 
-            // 卡片消息（自己发送的特殊卡片）保持原有样式，但为了对齐也加上头像占位
+            // 卡片消息（自己发送的特殊卡片）保持原有样式，为了对齐也加上头像占位
             if (message.type === "card" && isUser) {
               return (
                 <div
@@ -673,33 +673,8 @@ export default function ChatPage() {
                     alignItems: "flex-start",
                   }}
                 >
-                  {/* 头像 */}
-                  <div
-                    style={{
-                      width: 42,
-                      height: 42,
-                      flexShrink: 0,
-                      borderRadius: "10px",
-                      overflow: "hidden",
-                      backgroundColor: "#e8f2ff",
-                      marginLeft: 12,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "14px",
-                        color: "#53657c",
-                      }}
-                    >
-                      我
-                    </div>
-                  </div>
-
+                  {/* 卡片消息自己的头像占位 */}
+                  <div style={{ width: 6, flexShrink: 0 }} />
                   <div
                     style={{
                       display: "flex",
@@ -1141,63 +1116,60 @@ export default function ChatPage() {
               );
             }
 
-            // 普通文本消息：每一条都有头像，圆润气泡
+            // 普通文本消息：严格按照用户要求，自己无头像、无名字，时间与气泡横排
             return (
               <div
                 key={message.id}
                 style={{
                   display: "flex",
                   flexDirection: isUser ? "row-reverse" : "row",
-                  padding: "8px 12px",
+                  padding: "4px 12px",
                   width: "100%",
                   boxSizing: "border-box",
-                  alignItems: "flex-start",
+                  alignItems: "flex-end",
                 }}
               >
-                {/* 头像：始终显示，圆角矩形 10px */}
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    flexShrink: 0,
-                    borderRadius: "10px",
-                    overflow: "hidden",
-                    backgroundColor: isUser ? "#e8f2ff" : "#d8ecff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "14px",
-                    color: "#53657c",
-                    marginLeft: isUser ? 12 : 0,
-                    marginRight: isUser ? 0 : 12,
-                  }}
-                >
-                  {isUser ? "我" : message.avatar === "星" ? "⭐" : message.avatar}
-                </div>
+                {/* 头像：只有对方显示，自己不显示 */}
+                {!isUser ? (
+                  <div
+                    style={{
+                      width: 42, height: 42, flexShrink: 0,
+                      borderRadius: "10px",
+                      backgroundColor: "#d8ecff",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "20px",
+                      marginRight: 10,
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    {message.avatar === "星" ? "⭐" : message.avatar}
+                  </div>
+                ) : (
+                  <div style={{ width: 6, flexShrink: 0 }} />
+                )}
 
-                {/* 气泡与名字区域 */}
+                {/* 气泡主区域 */}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: isUser ? "flex-end" : "flex-start",
-                    maxWidth: "70%",
+                    maxWidth: "65%",
                   }}
                 >
-                  {/* 名字：只在需要时显示（这里为了简洁，默认显示） */}
-                  <span
-                    style={{
-                      fontSize: "13px",
-                      color: "#888",
-                      marginBottom: "4px",
-                      marginLeft: isUser ? 0 : "4px",
-                      marginRight: isUser ? "4px" : 0,
-                    }}
-                  >
-                    {isUser ? "我" : (message.avatar === "星" ? "沈星回" : message.avatar)}
-                  </span>
+                  {/* 名字：只有对方显示 */}
+                  {!isUser && (
+                    <span
+                      style={{
+                        fontSize: "12px", color: "#888",
+                        marginBottom: "3px", paddingLeft: "4px",
+                      }}
+                    >
+                      {message.avatar === "星" ? "沈星回" : message.avatar}
+                    </span>
+                  )}
 
-                  {/* 思考摘要（仅对方） */}
+                  {/* 思考摘要：只有对方显示 */}
                   {!isUser && message.thoughtSummary && (
                     <div
                       onClick={() => {
@@ -1205,43 +1177,66 @@ export default function ChatPage() {
                         setShowThoughtDrawer(true);
                       }}
                       style={{
-                        fontSize: "12px",
-                        color: "rgba(120,120,120,0.65)",
-                        marginBottom: "4px",
-                        lineHeight: 1.2,
-                        cursor: "pointer",
-                        paddingLeft: 4,
-                        paddingRight: 4,
+                        fontSize: "12px", color: "rgba(120,120,120,0.65)",
+                        marginBottom: "3px", cursor: "pointer", paddingLeft: 4,
                       }}
                     >
                       🩶 {message.thoughtSummary}
                     </div>
                   )}
 
-                  {/* 气泡本体：不对称圆角实现“指向感” */}
+                  {/* 气泡 + 时间 横排 */}
                   <div
                     style={{
-                      backgroundColor: isUser ? "#95EC69" : "#FFFFFF",
-                      color: "#1a1a1a",
-                      padding: "10px 16px",
-                      borderRadius: "18px",
-                      borderTopRightRadius: isUser ? "4px" : "18px",
-                      borderTopLeftRadius: isUser ? "18px" : "4px",
-                      fontSize: "15px",
-                      lineHeight: 1.5,
-                      position: "relative",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-                      wordBreak: "break-word",
-                      whiteSpace: "pre-wrap",
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setActiveMessage(message);
-                      setMenuPosition({ x: e.clientX, y: e.clientY });
-                      setShowMessageMenu(true);
+                      display: "flex",
+                      alignItems: "flex-end",
+                      gap: 5,
+                      flexDirection: isUser ? "row-reverse" : "row",
                     }}
                   >
-                    {message.text}
+                    {/* 气泡本体 */}
+                    <div
+                      style={{
+                        backgroundColor: isUser ? "#95EC69" : "#FFFFFF",
+                        color: "#1a1a1a",
+                        padding: "10px 14px",
+                        borderRadius: "18px",
+                        borderTopRightRadius: isUser ? "4px" : "18px",
+                        borderTopLeftRadius: isUser ? "18px" : "4px",
+                        fontSize: "15px",
+                        lineHeight: 1.5,
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+                        wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setActiveMessage(message);
+                        setMenuPosition({ x: e.clientX, y: e.clientY });
+                        setShowMessageMenu(true);
+                      }}
+                    >
+                      {message.text}
+                    </div>
+
+                    {/* 时间 + 已读，显示在气泡侧边 */}
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "rgba(0,0,0,0.38)",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: isUser ? "flex-end" : "flex-start",
+                        flexShrink: 0,
+                        marginBottom: "2px",
+                        gap: "1px",
+                      }}
+                    >
+                      {isUser && message.read && (
+                        <span style={{ color: "#5aad3f", fontSize: "11px" }}>已读</span>
+                      )}
+                      <span>{message.time}</span>
+                    </div>
                   </div>
                 </div>
               </div>
