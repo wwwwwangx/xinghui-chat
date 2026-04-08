@@ -22,6 +22,7 @@ export default function ChatPage() {
 
   const [messages, setMessages] = useState([]);
   const [favorites, setFavorites] = useState([]);
+  const [messagesLoaded, setMessagesLoaded] = useState(false);
 
   const externalEmojiLibrary = {
     reserve1: ["🐰", "🫧", "💫", "🌷", "🎀", "🍓", "🧸", "🌙", "☁️", "🪄", "💌", "🍰"],
@@ -128,19 +129,7 @@ export default function ChatPage() {
       read: true,
     };
 
-    setMessages((prev) => {
-      const updated = [...prev, userMessage];
-
-      fetch("/api/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages: updated }),
-      });
-
-      return updated;
-    });
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
 
     try {
@@ -165,32 +154,20 @@ export default function ChatPage() {
       for (let i = 0; i < replies.length; i++) {
         const replyText = replies[i];
 
-        setMessages((prev) => {
-          const updated = [
-            ...prev,
-            {
-              id: `m-${Date.now()}-${i}`,
-              type: "message",
-              role: "other",
-              avatar: "星",
-              text: replyText,
-              thoughtSummary: data?.thoughtSummary || "他刚刚在想点什么",
-              thoughtFull: data?.thoughtFull || "",
-              time: getCurrentTime(),
-              read: true,
-            },
-          ];
-
-          fetch("/api/messages", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ messages: updated }),
-          });
-
-          return updated;
-        });
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `m-${Date.now()}-${i}`,
+            type: "message",
+            role: "other",
+            avatar: "星",
+            text: replyText,
+            thoughtSummary: data?.thoughtSummary || "他刚刚在想点什么",
+            thoughtFull: data?.thoughtFull || "",
+            time: getCurrentTime(),
+            read: true,
+          },
+        ]);
 
         if (i < replies.length - 1) {
           await new Promise((r) => setTimeout(r, 400));
@@ -534,13 +511,33 @@ export default function ChatPage() {
 
   useEffect(() => {
     fetch("/api/messages")
-      .then(res => res.json())
-      .then(data => {
-        if (data.messages) {
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.messages)) {
           setMessages(data.messages);
         }
+      })
+      .catch((err) => {
+        console.error("加载历史消息失败:", err);
+      })
+      .finally(() => {
+        setMessagesLoaded(true);
       });
   }, []);
+
+  useEffect(() => {
+    if (!messagesLoaded) return;
+
+    fetch("/api/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ messages }),
+    }).catch((err) => {
+      console.error("保存消息失败:", err);
+    });
+  }, [messages, messagesLoaded]);
 
   useEffect(() => {
     const savedFavorites = localStorage.getItem("chat_favorites");
