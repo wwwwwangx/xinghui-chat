@@ -1,7 +1,13 @@
+
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 
 export default function ChatPage() {
+  const params = useParams();
+  const chatId = String(params.id || "default");
+  const router = useRouter();
+
   const [input, setInput] = useState("");
   const [openThought, setOpenThought] = useState(null);
   const [showEmojiPanel, setShowEmojiPanel] = useState(false);
@@ -13,7 +19,7 @@ export default function ChatPage() {
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showThoughtDrawer, setShowThoughtDrawer] = useState(false);
   const [activeThought, setActiveThought] = useState("");
-  const [isSending, setIsSending] = useState(false); // 防并发锁
+  const [isSending, setIsSending] = useState(false);
 
   const chatEndRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -24,6 +30,13 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
+
+  const contactNameMap = {
+    "1": "沈星回",
+    "2": "黎深",
+    "3": "祁煜",
+  };
+  const contactName = contactNameMap[chatId] || "联系人";
 
   const externalEmojiLibrary = {
     reserve1: ["🐰", "🫧", "💫", "🌷", "🎀", "🍓", "🧸", "🌙", "☁️", "🪄", "💌", "🍰"],
@@ -116,7 +129,6 @@ export default function ChatPage() {
     return res.json();
   };
 
-  // 辅助函数：拆分AI回复
   function splitAssistantReply(reply) {
     if (!reply) return [];
     return reply.split(/(?<=[。！？\n])/g).filter(s => s.trim());
@@ -141,7 +153,7 @@ export default function ChatPage() {
     setMessages(updatedMessages);
     setInput("");
 
-    // 构造完整历史，只取真正的文本消息
+    // 修改点2：历史消息限制最近20条（slice(-20)）
     const historyForAPI = updatedMessages
       .filter(
         (m) =>
@@ -150,6 +162,7 @@ export default function ChatPage() {
           typeof m.text === "string" &&
           m.text.trim()
       )
+      .slice(-20)  // ✅ 只取最近20条
       .map((m) => ({
         role: m.role === "me" ? "user" : "assistant",
         content: m.text.trim(),
@@ -161,7 +174,11 @@ export default function ChatPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ messages: historyForAPI }),
+        // 修改点1：添加 session_id
+        body: JSON.stringify({
+          session_id: chatId,
+          messages: historyForAPI,
+        }),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -518,7 +535,6 @@ export default function ChatPage() {
     setShowPlusPanel(false);
   };
 
-  // 自动滚动到底部
   useEffect(() => {
     const el = document.getElementById("chat-container");
     if (el) {
@@ -527,36 +543,31 @@ export default function ChatPage() {
   }, [messages]);
 
   useEffect(() => {
-    fetch("/api/messages")
-      .then((res) => res.json())
-      .then((data) => {
-         if (Array.isArray(data.messages)) {
-          const latestMessages = data.messages.slice(-30); // 只取最后30条
-          setMessages(latestMessages);
-         }
-        }
-      })
-      .catch((err) => {
-        console.error("加载历史消息失败:", err);
-      })
-      .finally(() => {
-        setMessagesLoaded(true);
-      });
-  }, []);
+    const key = `chat_messages_${chatId}`;
+    const saved = localStorage.getItem(key);
+
+    if (saved) {
+      try {
+        const allMessages = JSON.parse(saved);
+        const latestMessages = allMessages.slice(-30);
+        setMessages(latestMessages);
+      } catch (e) {
+        console.error("解析失败", e);
+        setMessages([]);
+      }
+    } else {
+      setMessages([]);
+    }
+
+    setMessagesLoaded(true);
+  }, [chatId]);
 
   useEffect(() => {
     if (!messagesLoaded) return;
 
-    fetch("/api/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ messages }),
-    }).catch((err) => {
-      console.error("保存消息失败:", err);
-    });
-  }, [messages, messagesLoaded]);
+    const key = `chat_messages_${chatId}`;
+    localStorage.setItem(key, JSON.stringify(messages));
+  }, [messages, messagesLoaded, chatId]);
 
   useEffect(() => {
     const savedFavorites = localStorage.getItem("chat_favorites");
@@ -605,7 +616,12 @@ export default function ChatPage() {
             boxSizing: "border-box",
           }}
         >
-          <div style={{ fontSize: "26px", color: "#222", lineHeight: 1 }}>‹</div>
+          <div
+            onClick={() => router.push("/chat")}
+            style={{ fontSize: "26px", color: "#222", lineHeight: 1, cursor: "pointer" }}
+          >
+            ‹
+          </div>
           <div
             style={{
               fontSize: "16px",
@@ -614,7 +630,7 @@ export default function ChatPage() {
               letterSpacing: "0.2px",
             }}
           >
-            沈星回
+            {contactName}
           </div>
           <div
             style={{
@@ -642,7 +658,6 @@ export default function ChatPage() {
           }}
         >
           {messages.map((message, idx) => {
-            // 日期分隔线
             if (message.type === "date") {
               return (
                 <div
@@ -675,7 +690,6 @@ export default function ChatPage() {
             const isSamePrev = prev && prev.role === message.role;
             const isSameNext = next && next.role === message.role;
 
-            // 卡片消息（自己发送的特殊卡片）保持原有样式，为了对齐也加上头像占位
             if (message.type === "card" && isUser) {
               return (
                 <div
@@ -689,7 +703,6 @@ export default function ChatPage() {
                     alignItems: "flex-start",
                   }}
                 >
-                  {/* 卡片消息自己的头像占位 */}
                   <div style={{ width: 6, flexShrink: 0 }} />
                   <div
                     style={{
@@ -717,7 +730,6 @@ export default function ChatPage() {
                       <span>{message.time}</span>
                     </div>
 
-                    {/* 红包卡片 */}
                     {message.cardType === "hongbao" && (
                       <div
                         style={{
@@ -766,7 +778,6 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* 礼物卡片 */}
                     {message.cardType === "gift" && (
                       <div
                         style={{
@@ -815,7 +826,6 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* 转账卡片 */}
                     {message.cardType === "transfer" && (
                       <div
                         style={{
@@ -893,7 +903,6 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* 照片卡片 */}
                     {message.cardType === "photo" && (
                       <div
                         style={{
@@ -941,7 +950,6 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* 位置卡片 */}
                     {message.cardType === "location" && (
                       <div
                         style={{
@@ -976,7 +984,6 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* 文件卡片 */}
                     {message.cardType === "file" && (
                       <div
                         onClick={() => message.url && window.open(message.url, "_blank")}
@@ -1029,7 +1036,6 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* 音乐卡片 */}
                     {message.cardType === "music" && (
                       <div
                         onClick={() => message.url && window.open(message.url, "_blank")}
@@ -1080,7 +1086,6 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    {/* 收藏卡片 */}
                     {message.cardType === "favorite" && (
                       <div
                         style={{
@@ -1132,7 +1137,6 @@ export default function ChatPage() {
               );
             }
 
-            // 普通文本消息：自己无头像、无名字，时间与气泡横排
             return (
               <div
                 key={message.id}
@@ -1145,7 +1149,6 @@ export default function ChatPage() {
                   alignItems: "flex-end",
                 }}
               >
-                {/* 头像：只有对方显示，自己不显示 */}
                 {!isUser ? (
                   <div
                     style={{
@@ -1164,7 +1167,6 @@ export default function ChatPage() {
                   <div style={{ width: 6, flexShrink: 0 }} />
                 )}
 
-                {/* 气泡主区域 */}
                 <div
                   style={{
                     display: "flex",
@@ -1173,7 +1175,6 @@ export default function ChatPage() {
                     maxWidth: "65%",
                   }}
                 >
-                  {/* 名字：只有对方显示 */}
                   {!isUser && (
                     <span
                       style={{
@@ -1181,11 +1182,10 @@ export default function ChatPage() {
                         marginBottom: "3px", paddingLeft: "4px",
                       }}
                     >
-                      {message.avatar === "星" ? "沈星回" : message.avatar}
+                      {message.avatar === "星" ? contactName : message.avatar}
                     </span>
                   )}
 
-                  {/* 思考摘要：只有对方显示 */}
                   {!isUser && message.thoughtSummary && (
                     <div
                       onClick={() => {
@@ -1201,7 +1201,6 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  {/* 气泡 + 时间 横排 */}
                   <div
                     style={{
                       display: "flex",
@@ -1210,7 +1209,6 @@ export default function ChatPage() {
                       flexDirection: isUser ? "row-reverse" : "row",
                     }}
                   >
-                    {/* 气泡本体 */}
                     <div
                       style={{
                         backgroundColor: isUser ? "#95EC69" : "#FFFFFF",
@@ -1235,7 +1233,6 @@ export default function ChatPage() {
                       {message.text}
                     </div>
 
-                    {/* 时间 + 已读，显示在气泡侧边 */}
                     <div
                       style={{
                         fontSize: "11px",
