@@ -13,6 +13,7 @@ export default function ChatPage() {
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showThoughtDrawer, setShowThoughtDrawer] = useState(false);
   const [activeThought, setActiveThought] = useState("");
+  const [isSending, setIsSending] = useState(false); // 防并发锁
 
   const chatEndRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -115,9 +116,16 @@ export default function ChatPage() {
     return res.json();
   };
 
+  // 辅助函数：拆分AI回复
+  function splitAssistantReply(reply) {
+    if (!reply) return [];
+    return reply.split(/(?<=[。！？\n])/g).filter(s => s.trim());
+  }
+
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || isSending) return;
+    setIsSending(true);
 
     const userMessage = {
       id: `m-${Date.now()}`,
@@ -129,8 +137,23 @@ export default function ChatPage() {
       read: true,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput("");
+
+    // 构造完整历史，只取真正的文本消息
+    const historyForAPI = updatedMessages
+      .filter(
+        (m) =>
+          m.type === "message" &&
+          (m.role === "me" || m.role === "other") &&
+          typeof m.text === "string" &&
+          m.text.trim()
+      )
+      .map((m) => ({
+        role: m.role === "me" ? "user" : "assistant",
+        content: m.text.trim(),
+      }));
 
     try {
       const res = await fetch("/api/chat", {
@@ -138,12 +161,10 @@ export default function ChatPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          messages: [
-            { role: "user", content: text }
-          ]
-        }),
+        body: JSON.stringify({ messages: historyForAPI }),
       });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
       const replies = Array.isArray(data?.replies)
@@ -175,18 +196,20 @@ export default function ChatPage() {
       }
     } catch (err) {
       console.error(err);
-
-      const errorMessage = {
-        id: `m-${Date.now()}-err`,
-        type: "message",
-        role: "other",
-        avatar: "系统",
-        text: "出错了，稍后再试",
-        time: getCurrentTime(),
-        read: true,
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `m-${Date.now()}-err`,
+          type: "message",
+          role: "other",
+          avatar: "系统",
+          text: "出错了，稍后再试",
+          time: getCurrentTime(),
+          read: true,
+        },
+      ]);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -494,12 +517,6 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, newMessage]);
     setShowPlusPanel(false);
   };
-
-  // 辅助函数：拆分AI回复
-  function splitAssistantReply(reply) {
-    if (!reply) return [];
-    return reply.split(/(?<=[。！？\n])/g).filter(s => s.trim());
-  }
 
   // 自动滚动到底部
   useEffect(() => {
