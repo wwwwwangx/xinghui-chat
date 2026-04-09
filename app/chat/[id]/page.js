@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -542,37 +541,35 @@ export default function ChatPage() {
     }
   }, [messages]);
 
+  // 加载历史消息（从数据库）
   useEffect(() => {
-    const key = `chat_messages_${chatId}`;
-    const saved = localStorage.getItem(key);
-
-    if (saved) {
-      try {
-        const allMessages = JSON.parse(saved);
-        const latestMessages = allMessages.slice(-30);
-        setMessages(latestMessages);
-      } catch (e) {
-        console.error("解析失败", e);
-        setMessages([]);
-      }
-    } else {
-      setMessages([]);
-    }
-
-    setMessagesLoaded(true);
+    setMessagesLoaded(false);
+    fetch(`/api/messages?session_id=${chatId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.messages)) {
+          setMessages(data.messages.slice(-100));
+        }
+      })
+      .catch((err) => console.error("加载历史消息失败:", err))
+      .finally(() => setMessagesLoaded(true));
   }, [chatId]);
 
+  // 保存消息到数据库
   useEffect(() => {
     if (!messagesLoaded) return;
-
-    const key = `chat_messages_${chatId}`;
-    localStorage.setItem(key, JSON.stringify(messages));
+    fetch("/api/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: chatId, messages }),
+    }).catch((err) => console.error("保存消息失败:", err));
   }, [messages, messagesLoaded, chatId]);
 
+  // 收藏仍用 localStorage（不涉及服务器，保持不变）
   useEffect(() => {
     const savedFavorites = localStorage.getItem("chat_favorites");
     if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
+      try { setFavorites(JSON.parse(savedFavorites)); } catch {}
     }
   }, []);
 

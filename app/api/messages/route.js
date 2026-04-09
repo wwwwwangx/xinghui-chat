@@ -6,15 +6,16 @@ const pool = new Pool({
   ssl: false,
 });
 
-const SESSION_ID = "default";
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const sessionId = searchParams.get("session_id") || "default";
 
-export async function GET() {
   try {
     const client = await pool.connect();
     try {
       const result = await client.query(
         "SELECT message_data FROM chat_messages WHERE session_id = $1 ORDER BY id ASC",
-        [SESSION_ID]
+        [sessionId]
       );
       const messages = result.rows.map((row) => row.message_data);
       return NextResponse.json({ messages });
@@ -31,25 +32,22 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const newMessages = body.messages || [];
+    const sessionId = body.session_id || "default";
 
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-
       await client.query(
         "DELETE FROM chat_messages WHERE session_id = $1",
-        [SESSION_ID]
+        [sessionId]
       );
-
       for (const msg of newMessages) {
         await client.query(
           "INSERT INTO chat_messages (session_id, message_data) VALUES ($1, $2)",
-          [SESSION_ID, JSON.stringify(msg)]
+          [sessionId, JSON.stringify(msg)]
         );
       }
-
       await client.query("COMMIT");
-
       return NextResponse.json({ success: true });
     } catch (err) {
       await client.query("ROLLBACK");
