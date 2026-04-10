@@ -183,9 +183,21 @@ export default function ChatPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
+      
+      // 修改点：解析 XML 标签，提取纯净回复和思考内容
+      const rawReply = data?.reply || "";
+      const replyMatch = rawReply.match(/<reply>([\s\S]*?)<\/reply>/);
+      const thoughtSummaryMatch = rawReply.match(/<thoughtSummary>([\s\S]*?)<\/thoughtSummary>/);
+      const thoughtFullMatch = rawReply.match(/<thoughtFull>([\s\S]*?)<\/thoughtFull>/);
+
+      const cleanReply = replyMatch ? replyMatch[1].trim() : rawReply;
+      const parsedThoughtSummary = thoughtSummaryMatch ? thoughtSummaryMatch[1].trim() : (data?.thoughtSummary || "他刚刚在想点什么");
+      const parsedThoughtFull = thoughtFullMatch ? thoughtFullMatch[1].trim() : (data?.thoughtFull || "");
+
       const replies = Array.isArray(data?.replies)
         ? data.replies
-        : splitAssistantReply(data?.reply || "");
+        : splitAssistantReply(cleanReply);
+
       if (!replies.length) throw new Error("AI returned empty replies");
 
       for (let i = 0; i < replies.length; i++) {
@@ -199,8 +211,8 @@ export default function ChatPage() {
             role: "other",
             avatar: "星",
             text: replyText,
-            thoughtSummary: data?.thoughtSummary || "他刚刚在想点什么",
-            thoughtFull: data?.thoughtFull || "",
+            thoughtSummary: parsedThoughtSummary,
+            thoughtFull: parsedThoughtFull,
             time: getCurrentTime(),
             read: true,
           },
