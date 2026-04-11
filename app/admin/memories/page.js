@@ -1,6 +1,22 @@
- "use client";
+"use client";
+
+import { useEffect, useState } from "react";
 
 export default function AdminMemoriesPage() {
+  const [memories, setMemories] = useState([]);
+
+  useEffect(() => {
+    fetch("https://wangxandxing.zeabur.app/manage/memories")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("记忆数据：", data);
+        setMemories(data);
+      })
+      .catch((err) => {
+        console.error("获取记忆失败:", err);
+      });
+  }, []);
+
   return (
     <div
       style={{
@@ -16,89 +32,40 @@ export default function AdminMemoriesPage() {
         style={{
           width: "100%",
           maxWidth: "430px",
-          minHeight: "100vh",
-          background: "#ffffff",
-          borderLeft: "1px solid #eee",
-          borderRight: "1px solid #eee",
+          background: "#fff",
+          padding: "16px",
         }}
       >
-        {/* 顶部栏 */}
-        <div
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-            background: "rgba(255,255,255,0.96)",
-            borderBottom: "1px solid #f0f0f0",
-            padding: "16px 18px 12px",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "20px",
-              fontWeight: 700,
-              color: "#111",
-              marginBottom: 6,
-            }}
-          >
-            记忆管理后台
-          </div>
-          <div
-            style={{
-              fontSize: "13px",
-              color: "#666",
-              lineHeight: 1.5,
-            }}
-          >
-            第一步：页面已创建。下一步再接接口拉取记忆数据。
-          </div>
-        </div>
+        <h2 style={{ marginBottom: "12px" }}>记忆列表</h2>
 
-        {/* 占位内容 */}
-        <div style={{ padding: "18px" }}>
-          <div
-            style={{
-              border: "1px solid #ececec",
-              borderRadius: "14px",
-              padding: "16px",
-              background: "#fafafa",
-              marginBottom: "14px",
-            }}
-          >
+        {memories.length === 0 ? (
+          <div style={{ color: "#999" }}>暂无记忆</div>
+        ) : (
+          memories.map((m) => (
             <div
+              key={m.id}
               style={{
-                fontSize: "15px",
-                fontWeight: 600,
-                color: "#222",
-                marginBottom: "8px",
+                border: "1px solid #eee",
+                borderRadius: "10px",
+                padding: "12px",
+                marginBottom: "10px",
+                background: "#fafafa",
               }}
             >
-              页面状态
-            </div>
-            <div
-              style={{
-                fontSize: "14px",
-                color: "#666",
-                lineHeight: 1.6,
-              }}
-            >
-              当前只完成页面壳子，还没有开始读取数据库。
-            </div>
-          </div>
+              <div style={{ fontSize: "14px", marginBottom: "6px" }}>
+                {m.content}
+              </div>
 
-          <div
-            style={{
-              border: "1px dashed #d9d9d9",
-              borderRadius: "14px",
-              padding: "24px 16px",
-              textAlign: "center",
-              color: "#999",
-              fontSize: "14px",
-            }}
-          >
-            暂无记忆列表
-          </div>
-        </div>
+              <div style={{ fontSize: "12px", color: "#666" }}>
+                type: {m.type} ｜ status: {m.status}
+              </div>
+
+              <div style={{ fontSize: "12px", color: "#999" }}>
+                importance: {m.importance}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
