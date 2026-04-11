@@ -190,7 +190,11 @@ export default function ChatPage() {
       const thoughtSummaryMatch = rawReply.match(/<thoughtSummary>([\s\S]*?)<\/thoughtSummary>/);
       const thoughtFullMatch = rawReply.match(/<thoughtFull>([\s\S]*?)<\/thoughtFull>/);
 
-      const cleanReply = replyMatch ? replyMatch[1].trim() : rawReply;
+      // 保底清理：即使 XML 格式不整齐也强制清除所有标签
+      const cleanReply = (replyMatch ? replyMatch[1].trim() : rawReply)
+        .replace(/<\/?reply>|<\/?thoughtSummary>|<\/?thoughtFull>|<thoughtSummary>[\s\S]*?<\/thoughtSummary>|<thoughtFull>[\s\S]*?<\/thoughtFull>/g, '')
+        .trim();
+
       const parsedThoughtSummary = thoughtSummaryMatch ? thoughtSummaryMatch[1].trim() : (data?.thoughtSummary || "他刚刚在想点什么");
       const parsedThoughtFull = thoughtFullMatch ? thoughtFullMatch[1].trim() : (data?.thoughtFull || "");
 
