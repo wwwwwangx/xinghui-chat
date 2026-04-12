@@ -67,3 +67,27 @@ export async function PATCH(req) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+export async function DELETE(req) {
+  try {
+    const { ids } = await req.json();
+    const client = await pool.connect();
+
+    try {
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return NextResponse.json({ error: "ids is required" }, { status: 400 });
+      }
+
+      await client.query(
+        "DELETE FROM memories WHERE id = ANY($1::int[])",
+        [ids]
+      );
+
+      return NextResponse.json({ success: true });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("[DELETE /api/memories]", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
