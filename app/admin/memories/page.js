@@ -128,9 +128,70 @@ export default function MemoriesAdminPage() {
           </button>
         </div>
 
-        {/* 计数 */}
-        <div style={{ fontSize: 13, color: "#888", marginBottom: 12 }}>
-          共 {sortedMemories.length} 条记忆
+        {/* 计数 + 批量操作 */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
+          <div style={{ fontSize: 13, color: "#888" }}>
+            共 {sortedMemories.length} 条记忆
+            {multiMode && selectedIds.length > 0 && (
+              <span style={{ marginLeft: 8, color: "#333" }}>已选 {selectedIds.length} 条</span>
+            )}
+          </div>
+
+          {multiMode && selectedIds.length > 0 && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={async () => {
+                  for (const id of selectedIds) {
+                    await fetch("/api/memories", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ id, status: "archived" }),
+                    });
+                  }
+                  setSelectedIds([]);
+                  fetchMemories();
+                }}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  border: "1px solid #fca5a5",
+                  background: "#fff5f5",
+                  color: "#ef4444",
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                批量归档
+              </button>
+
+              <button
+                onClick={async () => {
+                  const ok = confirm(`确定删除选中的 ${selectedIds.length} 条记忆吗？`);
+                  if (!ok) return;
+
+                  await fetch("/api/memories", {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ids: selectedIds }),
+                  });
+
+                  setSelectedIds([]);
+                  fetchMemories();
+                }}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#111",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                批量删除
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 列表 */}
