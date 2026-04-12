@@ -19,6 +19,7 @@ export default function ChatPage() {
   const [showThoughtDrawer, setShowThoughtDrawer] = useState(false);
   const [activeThought, setActiveThought] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [pendingImages, setPendingImages] = useState([]); // [{id, dataUrl, base64, mediaType, name}]
   const [showDetailMenu, setShowDetailMenu] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -148,15 +149,21 @@ export default function ChatPage() {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || isSending) return;
+    if (!text && pendingImages.length === 0) return;
+    if (isSending) return;
     setIsSending(true);
 
+    const imagesToSend = [...pendingImages];
+    setPendingImages([]);
+
+    // 构造本地显示的消息
     const userMessage = {
       id: `m-${Date.now()}`,
       type: "message",
       role: "me",
       avatar: "我",
-      text,
+      text: text || (imagesToSend.length > 0 ? "[图片]" : ""),
+      images: imagesToSend.length > 0 ? imagesToSend.map(img => ({ url: img.dataUrl, name: img.name })) : undefined,
       time: getCurrentTime(),
       read: true,
     };
@@ -165,32 +172,41 @@ export default function ChatPage() {
     setMessages(updatedMessages);
     setInput("");
 
-    // 修改点2：历史消息限制最近20条（slice(-20)）
+    // 构造发给 API 的历史（支持图片多模态）
     const historyForAPI = updatedMessages
-      .filter(
-        (m) =>
-          m.type === "message" &&
-          (m.role === "me" || m.role === "other") &&
-          typeof m.text === "string" &&
-          m.text.trim()
+      .filter(m =>
+        m.type === "message" &&
+        (m.role === "me" || m.role === "other") &&
+        (typeof m.text === "string" && m.text.trim() || m.images?.length > 0)
       )
-      .slice(-20)  // ✅ 只取最近20条
-      .map((m) => ({
-        role: m.role === "me" ? "user" : "assistant",
-        content: m.text.trim(),
-      }));
+      .slice(-20)
+      .map(m => {
+        if (m.role === "other") {
+          return { role: "assistant", content: m.text?.trim() || "" };
+        }
+        // 用户消息：有图片就用多模态格式
+        if (m.images?.length > 0) {
+          const contentParts = m.images.map(img => {
+            const base64 = img.url.split(",")[1] || "";
+            const mediaType = img.url.split(";")[0].split(":")[1] || "image/jpeg";
+            return {
+              type: "image",
+              source: { type: "base64", media_type: mediaType, data: base64 },
+            };
+          });
+          if (m.text && m.text !== "[图片]") {
+            contentParts.push({ type: "text", text: m.text.trim() });
+          }
+          return { role: "user", content: contentParts };
+        }
+        return { role: "user", content: m.text?.trim() || "" };
+      });
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // 修改点1：添加 session_id
-        body: JSON.stringify({
-          session_id: chatId,
-          messages: historyForAPI,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: chatId, messages: historyForAPI }),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -260,57 +276,20 @@ export default function ChatPage() {
 
   const handleImageSelect = async (file, source = "照片") => {
     if (!file) return;
-
-    const localUrl = URL.createObjectURL(file);
-    const tempId = `m-${Date.now()}`;
-
-    appendMessage({
-      id: tempId,
-      type: "card",
-      cardType: "photo",
-      role: "me",
-      avatar: "我",
-      time: getCurrentTime(),
-      read: true,
-      title: source === "拍摄" ? "新拍照片" : file.name || "图片",
-      subtitle: `上传中... ${formatFileSize(file.size)}`,
-      imageUrl: localUrl,
-      uploading: true,
-    });
-
     setShowPlusPanel(false);
 
-    try {
-      const result = await uploadFile(file);
-
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === tempId
-            ? {
-                ...msg,
-                imageUrl: result.url,
-                subtitle:
-                  source === "拍摄"
-                    ? `刚刚拍摄 · ${formatFileSize(file.size)}`
-                    : `图片 · ${formatFileSize(file.size)}`,
-                uploading: false,
-              }
-            : msg
-        )
-      );
-    } catch (error) {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === tempId
-            ? {
-                ...msg,
-                subtitle: "上传失败",
-                uploading: false,
-              }
-            : msg
-        )
-      );
-    }
+    // 读成 base64 加入待发队列
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      setPendingImages(prev => [...prev, {
+        id: `img-${Date.now()}-${Math.random()}`,
+        dataUrl,
+        name: file.name || "图片",
+        size: file.size,
+      }]);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleFileUpload = async (file, type) => {
@@ -1302,7 +1281,24 @@ export default function ChatPage() {
                         setShowMessageMenu(true);
                       }}
                     >
-                      {message.text}
+                      {message.images?.length > 0 && (
+                        <div style={{
+                          display: "flex", flexWrap: "wrap", gap: "4px",
+                          marginBottom: message.text && message.text !== "[图片]" ? "6px" : 0,
+                        }}>
+                          {message.images.map((img, i) => (
+                            <img key={i} src={img.url}
+                              onClick={() => setPreviewImage(img.url)}
+                              style={{
+                                width: message.images.length === 1 ? "180px" : "86px",
+                                height: message.images.length === 1 ? "auto" : "86px",
+                                maxHeight: "220px", objectFit: "cover",
+                                borderRadius: "10px", cursor: "pointer",
+                              }} alt={img.name} />
+                          ))}
+                        </div>
+                      )}
+                      {message.text && message.text !== "[图片]" && message.text}
                     </div>
 
                     <div
@@ -1329,6 +1325,31 @@ export default function ChatPage() {
           })}
           <div ref={chatEndRef} />
         </div>
+
+        {/* 待发图片预览条 */}
+        {pendingImages.length > 0 && (
+          <div style={{
+            display: "flex", gap: "8px", padding: "8px 12px",
+            background: "#fff", borderTop: "1px solid #f0f0f0",
+            overflowX: "auto", alignItems: "center",
+          }}>
+            {pendingImages.map(img => (
+              <div key={img.id} style={{ position: "relative", flexShrink: 0 }}>
+                <img src={img.dataUrl} style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8 }} alt="" />
+                <div
+                  onClick={() => setPendingImages(prev => prev.filter(p => p.id !== img.id))}
+                  style={{
+                    position: "absolute", top: -6, right: -6,
+                    width: 18, height: 18, borderRadius: "50%",
+                    background: "#333", color: "#fff", fontSize: 11,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >✕</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div
           style={{
