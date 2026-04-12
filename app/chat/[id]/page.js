@@ -572,22 +572,6 @@ export default function ChatPage() {
     prevMsgLenRef.current = messages.length;
   }, [messages]);
 
-  // iOS Safari 键盘高度动态适配
-  useEffect(() => {
-    const updateHeight = () => {
-      const vh = window.visualViewport?.height ?? window.innerHeight;
-      const wrapper = document.getElementById("chat-page-wrapper");
-      if (wrapper) wrapper.style.height = `${vh}px`;
-    };
-    updateHeight();
-    window.visualViewport?.addEventListener("resize", updateHeight);
-    window.visualViewport?.addEventListener("scroll", updateHeight);
-    return () => {
-      window.visualViewport?.removeEventListener("resize", updateHeight);
-      window.visualViewport?.removeEventListener("scroll", updateHeight);
-    };
-  }, []);
-
   // 加载历史消息（从数据库）
   useEffect(() => {
     setMessagesLoaded(false);
@@ -650,12 +634,12 @@ export default function ChatPage() {
   return (
     <div
       style={{
-        height: "100dvh",
+        position: "fixed",
+        top: 0, left: 0, right: 0, bottom: 0,
         background: "#F0F2F5",
         display: "flex",
         justifyContent: "center",
         fontFamily: '-apple-system, BlinkMacSystemFont, "Apple Color Emoji", sans-serif',
-        overflow: "hidden",
       }}
     >
       <div
