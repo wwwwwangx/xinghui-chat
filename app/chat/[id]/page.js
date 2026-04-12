@@ -234,28 +234,35 @@ export default function ChatPage() {
 
       if (!replies.length) throw new Error("AI returned empty replies");
 
+      const allNewMessages = [];
       for (let i = 0; i < replies.length; i++) {
         const replyText = replies[i];
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `m-${Date.now()}-${i}`,
-            type: "message",
-            role: "other",
-            avatar: "星",
-            text: replyText,
-            thoughtSummary: parsedThoughtSummary,
-            thoughtFull: parsedThoughtFull,
-            time: getCurrentTime(),
-            read: true,
-          },
-        ]);
+        const newMsg = {
+          id: `m-${Date.now()}-${i}`,
+          type: "message",
+          role: "other",
+          avatar: "星",
+          text: replyText,
+          thoughtSummary: parsedThoughtSummary,
+          thoughtFull: parsedThoughtFull,
+          time: getCurrentTime(),
+          read: true,
+        };
+        allNewMessages.push(newMsg);
+        setMessages((prev) => [...prev, newMsg]);
 
         if (i < replies.length - 1) {
           await new Promise((r) => setTimeout(r, 400));
         }
       }
+
+      // AI 全部回复完，立刻主动存一次，不等 useEffect
+      const finalMessages = [...updatedMessages, ...allNewMessages];
+      fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: chatId, messages: finalMessages }),
+      }).catch((err) => console.error("立即保存失败:", err));
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
