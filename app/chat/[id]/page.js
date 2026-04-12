@@ -23,6 +23,13 @@ export default function ChatPage() {
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTab, setSearchTab] = useState("text");
+  const [displayCount, setDisplayCount] = useState(20);
+  const [showContactProfile, setShowContactProfile] = useState(false);
+  const [contactRemark, setContactRemark] = useState("");
+  const [editingRemark, setEditingRemark] = useState(false);
+  const [remarkInput, setRemarkInput] = useState("");
+  const [contactAvatarUrl, setContactAvatarUrl] = useState(null);
+  const contactAvatarInputRef = useRef(null);
 
   const chatEndRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -554,11 +561,13 @@ export default function ChatPage() {
     setShowPlusPanel(false);
   };
 
+  const prevMsgLenRef = useRef(0);
   useEffect(() => {
     const el = document.getElementById("chat-container");
-    if (el) {
+    if (el && messages.length > prevMsgLenRef.current) {
       el.scrollTop = el.scrollHeight;
     }
+    prevMsgLenRef.current = messages.length;
   }, [messages]);
 
   // 加载历史消息（从数据库）
@@ -596,6 +605,8 @@ export default function ChatPage() {
   useEffect(() => {
     localStorage.setItem("chat_favorites", JSON.stringify(favorites));
   }, [favorites]);
+
+  const visibleMessages = messages.slice(-displayCount);
 
   return (
     <div
@@ -674,7 +685,28 @@ export default function ChatPage() {
             boxSizing: "border-box",
           }}
         >
-          {messages.map((message, idx) => {
+          {messages.length > displayCount && (
+            <div
+              onClick={() => {
+                const el = document.getElementById("chat-container");
+                const prevHeight = el ? el.scrollHeight : 0;
+                setDisplayCount(prev => prev + 20);
+                requestAnimationFrame(() => {
+                  if (el) el.scrollTop = el.scrollHeight - prevHeight;
+                });
+              }}
+              style={{
+                textAlign: "center",
+                padding: "10px",
+                fontSize: "13px",
+                color: "#888",
+                cursor: "pointer",
+              }}
+            >
+              ↑ 加载更多记录
+            </div>
+          )}
+          {visibleMessages.map((message, idx) => {
             if (message.type === "date") {
               return (
                 <div
@@ -702,8 +734,8 @@ export default function ChatPage() {
             }
 
             const isUser = message.role === "me";
-            const prev = messages[idx - 1];
-            const next = messages[idx + 1];
+            const prev = visibleMessages[idx - 1];
+            const next = visibleMessages[idx + 1];
             const isSamePrev = prev && prev.role === message.role;
             const isSameNext = next && next.role === message.role;
 
@@ -1855,16 +1887,23 @@ export default function ChatPage() {
 
             {/* 联系人头像区 */}
             <div style={{ background: "#fff", padding: "20px 16px 16px", display: "flex", gap: "12px", alignItems: "flex-end", marginBottom: "10px" }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+              <div
+                onClick={() => setShowContactProfile(true)}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", cursor: "pointer" }}
+              >
                 <div style={{
                   width: "56px", height: "56px", borderRadius: "14px",
-                  background: "linear-gradient(135deg, #c8dff0, #a0c4e8)",
+                  background: contactAvatarUrl ? "transparent" : "linear-gradient(135deg, #c8dff0, #a0c4e8)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "22px", color: "#fff", fontWeight: 700,
+                  overflow: "hidden",
                 }}>
-                  {contactName[0]}
+                  {contactAvatarUrl
+                    ? <img src={contactAvatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                    : contactName[0]
+                  }
                 </div>
-                <div style={{ fontSize: "12px", color: "#555" }}>{contactName}</div>
+                <div style={{ fontSize: "12px", color: "#555" }}>{contactRemark || contactName}</div>
               </div>
             </div>
 
@@ -2045,6 +2084,120 @@ export default function ChatPage() {
                   </div>
                 ));
               })()}
+            </div>
+          </div>
+        )}
+
+        {/* ===== 联系人资料页 ===== */}
+        {showContactProfile && (
+          <div style={{
+            position: "fixed", inset: 0, background: "#F0F2F5", zIndex: 202,
+            display: "flex", flexDirection: "column",
+            maxWidth: "430px", left: "50%", transform: "translateX(-50%)",
+          }}>
+            {/* 顶部导航 */}
+            <div style={{
+              height: "58px", background: "rgba(255,255,255,0.93)",
+              borderBottom: "1px solid rgba(0,0,0,0.06)",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "0 16px", boxSizing: "border-box",
+            }}>
+              <div onClick={() => { setShowContactProfile(false); setEditingRemark(false); }} style={{ fontSize: "26px", color: "#222", cursor: "pointer", lineHeight: 1 }}>‹</div>
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "#222" }}>联系人资料</div>
+              <div style={{ width: "24px" }} />
+            </div>
+
+            {/* 头像区 */}
+            <div style={{ background: "#fff", padding: "28px 16px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+              <div
+                onClick={() => contactAvatarInputRef.current?.click()}
+                style={{
+                  width: "80px", height: "80px", borderRadius: "20px",
+                  background: contactAvatarUrl ? "transparent" : "linear-gradient(135deg, #c8dff0, #a0c4e8)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "32px", color: "#fff", fontWeight: 700,
+                  overflow: "hidden", cursor: "pointer", position: "relative",
+                }}
+              >
+                {contactAvatarUrl
+                  ? <img src={contactAvatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                  : contactName[0]
+                }
+                <div style={{
+                  position: "absolute", bottom: 0, left: 0, right: 0,
+                  background: "rgba(0,0,0,0.35)", color: "#fff",
+                  fontSize: "11px", textAlign: "center", padding: "3px 0",
+                }}>更换</div>
+              </div>
+              <div style={{ fontSize: "17px", fontWeight: 700, color: "#222" }}>{contactRemark || contactName}</div>
+              <input
+                ref={contactAvatarInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const url = URL.createObjectURL(file);
+                    setContactAvatarUrl(url);
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </div>
+
+            {/* 选项列表 */}
+            <div style={{ background: "#fff" }}>
+              {editingRemark ? (
+                <div style={{ padding: "16px" }}>
+                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "8px" }}>编辑备注</div>
+                  <input
+                    autoFocus
+                    value={remarkInput}
+                    onChange={e => setRemarkInput(e.target.value)}
+                    placeholder={contactName}
+                    style={{
+                      width: "100%", boxSizing: "border-box",
+                      border: "1px solid #e0e0e0", borderRadius: "8px",
+                      padding: "10px 12px", fontSize: "15px",
+                      outline: "none", color: "#222",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+                    <div
+                      onClick={() => setEditingRemark(false)}
+                      style={{
+                        flex: 1, textAlign: "center", padding: "10px",
+                        border: "1px solid #ddd", borderRadius: "8px",
+                        fontSize: "14px", color: "#555", cursor: "pointer",
+                      }}
+                    >取消</div>
+                    <div
+                      onClick={() => { setContactRemark(remarkInput); setEditingRemark(false); }}
+                      style={{
+                        flex: 1, textAlign: "center", padding: "10px",
+                        background: "#07c160", borderRadius: "8px",
+                        fontSize: "14px", color: "#fff", cursor: "pointer", fontWeight: 600,
+                      }}
+                    >保存</div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => { setRemarkInput(contactRemark); setEditingRemark(true); }}
+                  style={{
+                    padding: "16px", borderBottom: "1px solid rgba(0,0,0,0.06)",
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    cursor: "pointer", fontSize: "15px", color: "#222",
+                  }}
+                >
+                  <span>编辑备注</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    {contactRemark && <span style={{ fontSize: "14px", color: "#aaa" }}>{contactRemark}</span>}
+                    <span style={{ color: "#bbb", fontSize: "18px" }}>›</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
