@@ -19,6 +19,10 @@ export default function ChatPage() {
   const [showThoughtDrawer, setShowThoughtDrawer] = useState(false);
   const [activeThought, setActiveThought] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [showDetailMenu, setShowDetailMenu] = useState(false);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTab, setSearchTab] = useState("text");
 
   const chatEndRef = useRef(null);
   const photoInputRef = useRef(null);
@@ -655,7 +659,7 @@ export default function ChatPage() {
           >
             <span style={{ fontSize: "18px" }}>⌕</span>
             <span style={{ fontSize: "18px" }}>⌕̸</span>
-            <span style={{ fontSize: "22px", marginTop: "-2px" }}>☰</span>
+            <span style={{ fontSize: "22px", marginTop: "-2px", cursor: "pointer" }} onClick={() => setShowDetailMenu(true)}>☰</span>
           </div>
         </div>
 
@@ -1818,6 +1822,231 @@ export default function ChatPage() {
               </div>
             </div>
           </>
+        )}
+
+        {/* ===== 聊天详情页 ===== */}
+        {showDetailMenu && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "#F0F2F5",
+            zIndex: 200,
+            display: "flex",
+            flexDirection: "column",
+            maxWidth: "430px",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}>
+            {/* 顶部导航 */}
+            <div style={{
+              height: "58px",
+              background: "rgba(255,255,255,0.93)",
+              borderBottom: "1px solid rgba(0,0,0,0.06)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0 16px",
+              boxSizing: "border-box",
+            }}>
+              <div onClick={() => setShowDetailMenu(false)} style={{ fontSize: "26px", color: "#222", cursor: "pointer", lineHeight: 1 }}>‹</div>
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "#222" }}>聊天详情</div>
+              <div style={{ width: "24px" }} />
+            </div>
+
+            {/* 联系人头像区 */}
+            <div style={{ background: "#fff", padding: "20px 16px 16px", display: "flex", gap: "12px", alignItems: "flex-end", marginBottom: "10px" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+                <div style={{
+                  width: "56px", height: "56px", borderRadius: "14px",
+                  background: "linear-gradient(135deg, #c8dff0, #a0c4e8)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "22px", color: "#fff", fontWeight: 700,
+                }}>
+                  {contactName[0]}
+                </div>
+                <div style={{ fontSize: "12px", color: "#555" }}>{contactName}</div>
+              </div>
+            </div>
+
+            {/* 菜单列表 */}
+            <div style={{ background: "#fff" }}>
+              <div
+                onClick={() => { setShowDetailMenu(false); setShowSearchPanel(true); setSearchQuery(""); setSearchTab("text"); }}
+                style={{
+                  padding: "16px 16px",
+                  borderBottom: "1px solid rgba(0,0,0,0.06)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  color: "#222",
+                }}
+              >
+                <span>查找聊天内容</span>
+                <span style={{ color: "#bbb", fontSize: "18px" }}>›</span>
+              </div>
+
+              <div
+                style={{
+                  padding: "16px 16px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  color: "#222",
+                }}
+              >
+                <span>设置当前聊天背景</span>
+                <span style={{ color: "#bbb", fontSize: "18px" }}>›</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== 搜索面板 ===== */}
+        {showSearchPanel && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "#F0F2F5",
+            zIndex: 201,
+            display: "flex",
+            flexDirection: "column",
+            maxWidth: "430px",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}>
+            {/* 顶部搜索栏 */}
+            <div style={{
+              background: "#fff",
+              padding: "10px 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              borderBottom: "1px solid rgba(0,0,0,0.06)",
+            }}>
+              <div style={{
+                flex: 1,
+                background: "#F0F2F5",
+                borderRadius: "10px",
+                display: "flex",
+                alignItems: "center",
+                padding: "8px 12px",
+                gap: "6px",
+              }}>
+                <span style={{ fontSize: "15px", color: "#aaa" }}>🔍</span>
+                <input
+                  autoFocus
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="搜索"
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    outline: "none",
+                    fontSize: "15px",
+                    color: "#222",
+                    flex: 1,
+                  }}
+                />
+              </div>
+              <div onClick={() => setShowSearchPanel(false)} style={{ fontSize: "14px", color: "#07c160", cursor: "pointer", whiteSpace: "nowrap" }}>取消</div>
+            </div>
+
+            {/* 分类标签（只有搜索框为空时显示） */}
+            {!searchQuery && (
+              <div style={{ background: "#fff", padding: "12px 16px 0", marginTop: "10px" }}>
+                <div style={{ fontSize: "12px", color: "#aaa", marginBottom: "12px", textAlign: "center" }}>快速搜索聊天内容</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", paddingBottom: "16px" }}>
+                  {[
+                    { key: "media", label: "图片与视频" },
+                    { key: "file", label: "文件" },
+                  ].map(tab => (
+                    <div
+                      key={tab.key}
+                      onClick={() => setSearchTab(tab.key)}
+                      style={{
+                        padding: "8px 20px",
+                        borderRadius: "999px",
+                        background: searchTab === tab.key ? "#07c160" : "#F0F2F5",
+                        color: searchTab === tab.key ? "#fff" : "#555",
+                        fontSize: "14px",
+                        cursor: "pointer",
+                        fontWeight: searchTab === tab.key ? 600 : 400,
+                      }}
+                    >
+                      {tab.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 搜索结果 */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "10px 0" }}>
+              {(() => {
+                let results = [];
+                if (searchQuery) {
+                  results = messages.filter(m =>
+                    m.type === "message" && typeof m.text === "string" &&
+                    m.text.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                } else if (searchTab === "media") {
+                  results = messages.filter(m => m.type === "card" && m.cardType === "photo");
+                } else if (searchTab === "file") {
+                  results = messages.filter(m => m.type === "card" && (m.cardType === "file" || m.cardType === "music"));
+                }
+
+                if (!results.length) return (
+                  <div style={{ textAlign: "center", color: "#aaa", fontSize: "14px", marginTop: "40px" }}>
+                    {searchQuery ? "没有找到相关内容" : "暂无内容"}
+                  </div>
+                );
+
+                return results.map(m => (
+                  <div key={m.id} style={{
+                    background: "#fff",
+                    margin: "0 0 1px",
+                    padding: "12px 16px",
+                    display: "flex",
+                    gap: "10px",
+                    alignItems: "flex-start",
+                  }}>
+                    <div style={{
+                      width: "36px", height: "36px", borderRadius: "10px",
+                      background: m.role === "me" ? "#d4f0de" : "#c8dff0",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "13px", fontWeight: 700, color: "#555", flexShrink: 0,
+                    }}>
+                      {m.role === "me" ? "我" : contactName[0]}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "12px", color: "#aaa", marginBottom: "3px" }}>{m.time}</div>
+                      {m.type === "card" && m.imageUrl ? (
+                        <img src={m.imageUrl} style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "8px" }} alt="" />
+                      ) : (
+                        <div style={{ fontSize: "14px", color: "#333", lineHeight: 1.5, wordBreak: "break-all" }}>
+                          {searchQuery ? (
+                            (() => {
+                              const idx = m.text.toLowerCase().indexOf(searchQuery.toLowerCase());
+                              if (idx === -1) return m.text;
+                              return <>
+                                {m.text.slice(0, idx)}
+                                <span style={{ background: "#ffe066", borderRadius: "2px" }}>{m.text.slice(idx, idx + searchQuery.length)}</span>
+                                {m.text.slice(idx + searchQuery.length)}
+                              </>;
+                            })()
+                          ) : m.title || m.text}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
         )}
       </div>
     </div>
