@@ -573,13 +573,29 @@ export default function ChatPage() {
       .finally(() => setMessagesLoaded(true));
   }, [chatId]);
 
-  // 保存消息到数据库
+  // 保存消息到数据库（剥掉 base64 图片数据，只保留文字）
+  const sanitizeForDB = (msgs) => msgs.map(msg => {
+    if (msg.images?.length > 0) {
+      return {
+        ...msg,
+        images: msg.images.map(img => ({
+          ...img,
+          url: img.url?.startsWith("data:") ? "" : img.url,
+        })),
+      };
+    }
+    if (msg.type === "card" && msg.imageUrl?.startsWith("data:")) {
+      return { ...msg, imageUrl: "" };
+    }
+    return msg;
+  });
+
   useEffect(() => {
     if (!messagesLoaded) return;
     fetch("/api/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: chatId, messages }),
+      body: JSON.stringify({ session_id: chatId, messages: sanitizeForDB(messages) }),
     }).catch((err) => console.error("保存消息失败:", err));
   }, [messages, messagesLoaded, chatId]);
 
