@@ -572,6 +572,22 @@ export default function ChatPage() {
     prevMsgLenRef.current = messages.length;
   }, [messages]);
 
+  // iOS Safari 键盘高度动态适配
+  useEffect(() => {
+    const updateHeight = () => {
+      const vh = window.visualViewport?.height ?? window.innerHeight;
+      const wrapper = document.getElementById("chat-page-wrapper");
+      if (wrapper) wrapper.style.height = `${vh}px`;
+    };
+    updateHeight();
+    window.visualViewport?.addEventListener("resize", updateHeight);
+    window.visualViewport?.addEventListener("scroll", updateHeight);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateHeight);
+      window.visualViewport?.removeEventListener("scroll", updateHeight);
+    };
+  }, []);
+
   // 加载历史消息（从数据库）
   useEffect(() => {
     setMessagesLoaded(false);
@@ -643,6 +659,7 @@ export default function ChatPage() {
       }}
     >
       <div
+        id="chat-page-wrapper"
         style={{
           width: "100%",
           maxWidth: "430px",
@@ -1623,10 +1640,11 @@ export default function ChatPage() {
           ref={photoInputRef}
           type="file"
           accept="image/*"
+          multiple
           style={{ display: "none" }}
           onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleImageSelect(file, "照片");
+            const files = Array.from(e.target.files || []);
+            files.forEach(file => handleImageSelect(file, "照片"));
             e.target.value = "";
           }}
         />
