@@ -7,6 +7,10 @@ export default function MemoriesAdminPage() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("active");
+  
+  const [multiMode, setMultiMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [sortBy, setSortBy] = useState("time"); // time | importance
 
   const fetchMemories = async () => {
     setLoading(true);
@@ -43,13 +47,21 @@ export default function MemoriesAdminPage() {
 
   const typeColor = { core: "#6366f1", atomic: "#10b981", plan: "#f59e0b", general: "#9ca3af" };
 
+  const sortedMemories = [...memories].sort((a, b) => {
+    if (sortBy === "importance") {
+      return b.importance - a.importance;
+    }
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+
   return (
     <div style={{ minHeight: "100vh", background: "#f5f5f5", padding: "24px", fontFamily: "sans-serif" }}>
       <div style={{ maxWidth: 800, margin: "0 auto" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>🧠 记忆管理后台</h1>
 
-        {/* 筛选栏 */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+        {/* 顶部工具栏（含多选、新建、排序） */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+          
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -57,10 +69,39 @@ export default function MemoriesAdminPage() {
             placeholder="搜索记忆内容…"
             style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14 }}
           />
+
+          <button
+            onClick={() => {
+              if (multiMode) {
+                setSelectedIds([]);
+              }
+              setMultiMode(!multiMode);
+            }}
+            style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", background: multiMode ? "#eee" : "#fff", cursor: "pointer" }}
+          >
+            多选
+          </button>
+
+          <button
+            onClick={() => alert("这里可以做新建记忆")}
+            style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: "#111", color: "#fff", cursor: "pointer" }}
+          >
+            + 新建
+          </button>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd" }}
+          >
+            <option value="time">按时间</option>
+            <option value="importance">按重要度</option>
+          </select>
+
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14 }}
+            style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd" }}
           >
             <option value="">全部类型</option>
             <option value="core">core</option>
@@ -68,18 +109,20 @@ export default function MemoriesAdminPage() {
             <option value="plan">plan</option>
             <option value="general">general</option>
           </select>
+
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", fontSize: 14 }}
+            style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd" }}
           >
             <option value="active">active</option>
             <option value="archived">archived</option>
             <option value="superseded">superseded</option>
           </select>
+
           <button
             onClick={fetchMemories}
-            style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#222", color: "#fff", fontSize: 14, cursor: "pointer" }}
+            style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#222", color: "#fff", cursor: "pointer" }}
           >
             搜索
           </button>
@@ -87,16 +130,16 @@ export default function MemoriesAdminPage() {
 
         {/* 计数 */}
         <div style={{ fontSize: 13, color: "#888", marginBottom: 12 }}>
-          共 {memories.length} 条记忆
+          共 {sortedMemories.length} 条记忆
         </div>
 
         {/* 列表 */}
         {loading ? (
           <div style={{ textAlign: "center", color: "#999", padding: 40 }}>加载中…</div>
-        ) : memories.length === 0 ? (
+        ) : sortedMemories.length === 0 ? (
           <div style={{ textAlign: "center", color: "#999", padding: 40 }}>没有记忆</div>
         ) : (
-          memories.map((m) => (
+          sortedMemories.map((m) => (
             <div
               key={m.id}
               style={{
@@ -108,6 +151,20 @@ export default function MemoriesAdminPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                {multiMode && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(m.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds([...selectedIds, m.id]);
+                      } else {
+                        setSelectedIds(selectedIds.filter(id => id !== m.id));
+                      }
+                    }}
+                  />
+                )}
+
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, color: "#1a1a1a", lineHeight: 1.6, marginBottom: 8 }}>
                     {m.content}
