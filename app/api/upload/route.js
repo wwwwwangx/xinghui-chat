@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import path from "path";
 
 export async function POST(req) {
   const formData = await req.formData();
@@ -12,14 +10,12 @@ export async function POST(req) {
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-
-  const filename = `${Date.now()}-${file.name}`;
-  const filePath = path.join(process.cwd(), "public/uploads", filename);
-
-  await writeFile(filePath, buffer);
+  const base64 = buffer.toString("base64");
+  const mimeType = file.type || "application/octet-stream";
+  const dataUrl = `data:${mimeType};base64,${base64}`;
 
   return NextResponse.json({
-    url: `/uploads/${filename}`,
+    url: dataUrl,
     name: file.name,
   });
 }

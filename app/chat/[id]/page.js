@@ -23,7 +23,7 @@ export default function ChatPage() {
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTab, setSearchTab] = useState("text");
-  const [displayCount, setDisplayCount] = useState(20);
+  const [displayCount, setDisplayCount] = useState(8);
   const [showContactProfile, setShowContactProfile] = useState(false);
   const [contactRemark, setContactRemark] = useState("");
   const [editingRemark, setEditingRemark] = useState(false);
@@ -1860,14 +1860,11 @@ export default function ChatPage() {
         {showDetailMenu && (
           <div style={{
             position: "fixed",
-            inset: 0,
+            top: 0, left: 0, width: "100%", height: "100%",
             background: "#F0F2F5",
             zIndex: 200,
             display: "flex",
             flexDirection: "column",
-            maxWidth: "430px",
-            left: "50%",
-            transform: "translateX(-50%)",
           }}>
             {/* 顶部导航 */}
             <div style={{
@@ -1948,14 +1945,11 @@ export default function ChatPage() {
         {showSearchPanel && (
           <div style={{
             position: "fixed",
-            inset: 0,
+            top: 0, left: 0, width: "100%", height: "100%",
             background: "#F0F2F5",
             zIndex: 201,
             display: "flex",
             flexDirection: "column",
-            maxWidth: "430px",
-            left: "50%",
-            transform: "translateX(-50%)",
           }}>
             {/* 顶部搜索栏 */}
             <div style={{
@@ -2091,9 +2085,10 @@ export default function ChatPage() {
         {/* ===== 联系人资料页 ===== */}
         {showContactProfile && (
           <div style={{
-            position: "fixed", inset: 0, background: "#F0F2F5", zIndex: 202,
+            position: "fixed",
+            top: 0, left: 0, width: "100%", height: "100%",
+            background: "#F0F2F5", zIndex: 202,
             display: "flex", flexDirection: "column",
-            maxWidth: "430px", left: "50%", transform: "translateX(-50%)",
           }}>
             {/* 顶部导航 */}
             <div style={{
