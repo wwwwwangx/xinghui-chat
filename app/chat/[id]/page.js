@@ -23,7 +23,7 @@ export default function ChatPage() {
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTab, setSearchTab] = useState("text");
-  const [displayCount, setDisplayCount] = useState(8);
+  const [displayCount, setDisplayCount] = useState(5);
   const [showContactProfile, setShowContactProfile] = useState(false);
   const [contactRemark, setContactRemark] = useState("");
   const [editingRemark, setEditingRemark] = useState(false);
@@ -600,11 +600,26 @@ export default function ChatPage() {
     if (savedFavorites) {
       try { setFavorites(JSON.parse(savedFavorites)); } catch {}
     }
-  }, []);
+    // 加载备注和头像
+    const savedRemark = localStorage.getItem(`contact_remark_${chatId}`);
+    if (savedRemark) setContactRemark(savedRemark);
+    const savedAvatar = localStorage.getItem(`contact_avatar_${chatId}`);
+    if (savedAvatar) setContactAvatarUrl(savedAvatar);
+  }, [chatId]);
 
   useEffect(() => {
     localStorage.setItem("chat_favorites", JSON.stringify(favorites));
   }, [favorites]);
+
+  useEffect(() => {
+    localStorage.setItem(`contact_remark_${chatId}`, contactRemark);
+  }, [contactRemark, chatId]);
+
+  useEffect(() => {
+    if (contactAvatarUrl && !contactAvatarUrl.startsWith("blob:")) {
+      localStorage.setItem(`contact_avatar_${chatId}`, contactAvatarUrl);
+    }
+  }, [contactAvatarUrl, chatId]);
 
   const visibleMessages = messages.slice(-displayCount);
 
@@ -660,17 +675,8 @@ export default function ChatPage() {
           >
             {contactName}
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: "14px",
-              color: "#222",
-              alignItems: "center",
-            }}
-          >
-            <span style={{ fontSize: "18px" }}>⌕</span>
-            <span style={{ fontSize: "18px" }}>⌕̸</span>
-            <span style={{ fontSize: "22px", marginTop: "-2px", cursor: "pointer" }} onClick={() => setShowDetailMenu(true)}>☰</span>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span style={{ fontSize: "22px", cursor: "pointer" }} onClick={() => setShowDetailMenu(true)}>☰</span>
           </div>
         </div>
 
@@ -1315,7 +1321,7 @@ export default function ChatPage() {
             borderTop: "1px solid #eee",
             background: "#fff",
             position: "relative",
-            zIndex: 2,
+            zIndex: 10,
           }}
         >
           <button
@@ -1329,6 +1335,8 @@ export default function ChatPage() {
               lineHeight: 1,
               color: "#333",
               cursor: "pointer",
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
             }}
             onClick={() => {
               setShowPlusPanel((prev) => !prev);
@@ -2133,8 +2141,9 @@ export default function ChatPage() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    const url = URL.createObjectURL(file);
-                    setContactAvatarUrl(url);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setContactAvatarUrl(ev.target.result);
+                    reader.readAsDataURL(file);
                   }
                   e.target.value = "";
                 }}
