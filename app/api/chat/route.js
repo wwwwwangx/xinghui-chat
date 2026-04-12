@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const maxDuration = 60; // 把超时从默认10秒延长到60秒
+
 function splitAssistantReply(text) {
   if (!text) return [];
 
@@ -47,13 +49,17 @@ export async function POST(req) {
     let response;
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 55000); // 55秒超时
       response = await fetch(gatewayUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
     } catch (fetchErr) {
       console.error("Fetch error:", fetchErr);
 
