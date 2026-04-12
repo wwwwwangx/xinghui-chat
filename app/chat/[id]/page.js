@@ -2300,7 +2300,7 @@ export default function ChatPage() {
                   </div>
                   <div
                     onClick={() => {
-                      const bio = prompt("编辑个性签名", contactBio);
+                      const bio = prompt("编辑个性签名。", contactBio);
                       if (bio !== null) setContactBio(bio);
                     }}
                     style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontSize: "15px", color: "#222" }}
