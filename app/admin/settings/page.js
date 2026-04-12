@@ -89,17 +89,42 @@ export default function SettingsPage() {
       </div>
     );
 
-    if (active === "default_model") return (
-      <div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>默认模型</h2>
-        <Field
-          label="聊天模型"
-          desc="AI 回复使用的模型，例如 claude-haiku-4-5-20251001"
-          fieldKey="default_model"
-        />
-        <SaveButton k="default_model" />
-      </div>
-    );
+    if (active === "default_model") {
+      const MODEL_OPTIONS = [
+        { label: "Claude Sonnet 4.6（聊天主力）", value: "claude-sonnet-4-6" },
+        { label: "Claude Haiku 4.5（轻量快速）", value: "claude-haiku-4-5-20251001" },
+      ];
+      const modelConfigs = [
+        { key: "default_model", title: "聊天模型", desc: "用于正常对话回复，建议使用 Sonnet" },
+        { key: "memory_model", title: "记忆提取模型", desc: "从对话中提取用户事实，Haiku 即可" },
+        { key: "summary_model", title: "总结模型", desc: "生成每日/每周/每月总结，Haiku 即可" },
+      ];
+      return (
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>默认模型</h2>
+          {modelConfigs.map((item) => (
+            <div key={item.key} style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{item.title}</div>
+              <div style={{ fontSize: 12, color: "#999", marginBottom: 8 }}>{item.desc}</div>
+              <select
+                value={settings[item.key] || ""}
+                onChange={(e) => setSettings({ ...settings, [item.key]: e.target.value })}
+                style={{
+                  width: "100%", padding: "10px 12px", borderRadius: 8,
+                  border: "1px solid #e5e5e5", fontSize: 14, background: "#fafafa",
+                  color: "#1a1a1a", outline: "none", cursor: "pointer",
+                }}
+              >
+                {MODEL_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <SaveButton k={item.key} />
+            </div>
+          ))}
+        </div>
+      );
+    }
 
     if (active === "memory") return (
       <div>
@@ -179,11 +204,11 @@ export default function SettingsPage() {
             ))}
             <div style={{ borderTop: "1px solid #f0f0f0", marginTop: 8, paddingTop: 8 }}>
               <a
-                href=" "
+                href="/admin/memories"
                 style={{ padding: "10px 14px", borderRadius: 10, fontSize: 14, color: "#6366f1", display: "block", textDecoration: "none" }}
               >
                 📋 记忆管理
-              </a >
+              </a>
             </div>
           </div>
 

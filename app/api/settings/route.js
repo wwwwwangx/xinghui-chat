@@ -1,45 +1,144 @@
-import { NextResponse } from "next/server";
-import { Pool } from "pg";
+"use client";
+import { useState, useEffect } from "react";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL?.replace("sslmode=require", "sslmode=disable"),
-  ssl: false,
-});
+const MODEL_OPTIONS = [
+  { label: "Claude Sonnet 4.6（聊天主力）", value: "claude-sonnet-4-6" },
+  { label: "Claude Haiku 4.5（轻量快速）", value: "claude-haiku-4-5-20251001" },
+];
 
-export async function GET() {
-  try {
-    const client = await pool.connect();
+const CONFIG_ITEMS = [
+  {
+    key: "default_model",
+    title: "聊天模型",
+    desc: "用于正常对话回复，建议使用 Sonnet 系列",
+  },
+  {
+    key: "memory_model",
+    title: "记忆提取模型",
+    desc: "从对话中提取用户事实，用便宜模型即可",
+  },
+  {
+    key: "summary_model",
+    title: "总结模型",
+    desc: "生成每日/每周/每月总结，用便宜模型即可",
+  },
+];
+
+export default function SettingsPage() {
+  const [config, setConfig] = useState({
+    default_model: "claude-sonnet-4-6",
+    memory_model: "claude-haiku-4-5-20251001",
+    summary_model: "claude-haiku-4-5-20251001",
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.settings) {
+          setConfig((prev) => ({ ...prev, ...data.settings }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
     try {
-      const result = await client.query("SELECT key, value FROM settings");
-      const settings = {};
-      result.rows.forEach((row) => { settings[row.key] = row.value; });
-      return NextResponse.json({ settings });
+      // 逐个保存，因为后端每次只接受一个 key/value
+      for (const item of CONFIG_ITEMS) {
+        await fetch("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: item.key, value: config[item.key] }),
+        });
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error(e);
     } finally {
-      client.release();
+      setSaving(false);
     }
-  } catch (err) {
-    console.error("[GET /api/settings]", err);
-    return NextResponse.json({ settings: {} });
-  }
-}
+  };
 
-export async function POST(req) {
-  try {
-    const { key, value } = await req.json();
-    const client = await pool.connect();
-    try {
-      await client.query(
-        `INSERT INTO settings (key, value, updated_at)
-         VALUES ($1, $2, NOW())
-         ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()`,
-        [key, value]
-      );
-      return NextResponse.json({ success: true });
-    } finally {
-      client.release();
-    }
-  } catch (err) {
-    console.error("[POST /api/settings]", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "#f5f5f7",
+      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+      display: "flex",
+      justifyContent: "center",
+      padding: "40px 20px",
+    }}>
+      <div style={{ width: "100%", maxWidth: 560 }}>
+        <div style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a", marginBottom: 6 }}>
+          模型配置
+        </div>
+        <div style={{ fontSize: 14, color: "#888", marginBottom: 28 }}>
+          分别为不同用途选择合适的模型
+        </div>
+
+        {CONFIG_ITEMS.map((item) => (
+          <div key={item.key} style={{
+            background: "#fff",
+            borderRadius: 14,
+            padding: "20px 24px",
+            marginBottom: 16,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#1a1a1a", marginBottom: 4 }}>
+              {item.title}
+            </div>
+            <div style={{ fontSize: 13, color: "#999", marginBottom: 14 }}>
+              {item.desc}
+            </div>
+            <select
+              value={config[item.key] || ""}
+              onChange={(e) => setConfig((prev) => ({ ...prev, [item.key]: e.target.value }))}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 8,
+                border: "1px solid #e0e0e0",
+                fontSize: 14,
+                background: "#fafafa",
+                color: "#1a1a1a",
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              {MODEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            marginTop: 8,
+            padding: "12px 32px",
+            borderRadius: 10,
+            border: "none",
+            background: saved ? "#34c759" : "#1a1a1a",
+            color: "#fff",
+            fontSize: 15,
+            fontWeight: 600,
+            cursor: saving ? "not-allowed" : "pointer",
+            transition: "background 0.2s",
+          }}
+        >
+          {saving ? "保存中…" : saved ? "✓ 已保存" : "保存配置"}
+        </button>
+      </div>
+    </div>
+  );
 }
