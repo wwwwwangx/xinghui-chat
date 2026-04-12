@@ -221,6 +221,7 @@ export default function ChatPage() {
 
       // 保底清理：即使 XML 格式不整齐也强制清除所有标签
       const cleanReply = (replyMatch ? replyMatch[1].trim() : rawReply)
+        .replace(/<thinking>[\s\S]*?<\/thinking>/g, '')
         .replace(/<\/?reply>|<\/?thoughtSummary>|<\/?thoughtFull>|<thoughtSummary>[\s\S]*?<\/thoughtSummary>|<thoughtFull>[\s\S]*?<\/thoughtFull>/g, '')
         .trim();
 
