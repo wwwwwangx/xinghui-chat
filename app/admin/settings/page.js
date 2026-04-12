@@ -90,6 +90,43 @@ export default function SettingsPage() {
           fieldKey="api_key"
         />
         <SaveButton k="api_base_url" />
+
+        <div style={{ borderTop: "1px solid #f0f0f0", margin: "28px 0" }} />
+
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>混元视觉识别</div>
+          <div style={{ fontSize: 12, color: "#999", marginBottom: 12 }}>
+            开启后发图片时会调用混元 Vision 让 AI 看见图片内容，耗时约 5-15 秒。关闭则图片只显示不识别，速度更快。
+          </div>
+          <div
+            onClick={() => {
+              const newVal = settings["hunyuan_vision_enabled"] === "true" ? "false" : "true";
+              setSettings({ ...settings, hunyuan_vision_enabled: newVal });
+              saveSetting("hunyuan_vision_enabled", newVal);
+            }}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 10,
+              cursor: "pointer", userSelect: "none",
+            }}
+          >
+            <div style={{
+              width: 44, height: 26, borderRadius: 13,
+              background: settings["hunyuan_vision_enabled"] === "false" ? "#e5e5e5" : "#10b981",
+              position: "relative", transition: "background 0.2s",
+            }}>
+              <div style={{
+                position: "absolute", top: 3,
+                left: settings["hunyuan_vision_enabled"] === "false" ? 3 : 21,
+                width: 20, height: 20, borderRadius: "50%",
+                background: "#fff", transition: "left 0.2s",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+              }} />
+            </div>
+            <span style={{ fontSize: 14, color: "#555" }}>
+              {settings["hunyuan_vision_enabled"] === "false" ? "已关闭" : "已开启"}
+            </span>
+          </div>
+        </div>
       </div>
     );
 
