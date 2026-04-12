@@ -25,7 +25,9 @@ export default function ChatPage() {
   const [searchTab, setSearchTab] = useState("text");
   const [displayCount, setDisplayCount] = useState(5);
   const [showContactProfile, setShowContactProfile] = useState(false);
+  const [showContactDetail, setShowContactDetail] = useState(false);
   const [contactRemark, setContactRemark] = useState("");
+  const [contactBio, setContactBio] = useState("");
   const [editingRemark, setEditingRemark] = useState(false);
   const [remarkInput, setRemarkInput] = useState("");
   const [contactAvatarUrl, setContactAvatarUrl] = useState(null);
@@ -605,6 +607,8 @@ export default function ChatPage() {
     if (savedRemark) setContactRemark(savedRemark);
     const savedAvatar = localStorage.getItem(`contact_avatar_${chatId}`);
     if (savedAvatar) setContactAvatarUrl(savedAvatar);
+    const savedBio = localStorage.getItem(`contact_bio_${chatId}`);
+    if (savedBio) setContactBio(savedBio);
   }, [chatId]);
 
   useEffect(() => {
@@ -614,6 +618,10 @@ export default function ChatPage() {
   useEffect(() => {
     localStorage.setItem(`contact_remark_${chatId}`, contactRemark);
   }, [contactRemark, chatId]);
+
+  useEffect(() => {
+    localStorage.setItem(`contact_bio_${chatId}`, contactBio);
+  }, [contactBio, chatId]);
 
   useEffect(() => {
     if (contactAvatarUrl && !contactAvatarUrl.startsWith("blob:")) {
@@ -626,18 +634,19 @@ export default function ChatPage() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        height: "100dvh",
         background: "#F0F2F5",
         display: "flex",
         justifyContent: "center",
         fontFamily: '-apple-system, BlinkMacSystemFont, "Apple Color Emoji", sans-serif',
+        overflow: "hidden",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: "430px",
-          minHeight: "100vh",
+          height: "100%",
           display: "flex",
           flexDirection: "column",
           background: "#F0F2F5",
@@ -686,6 +695,7 @@ export default function ChatPage() {
             position: "relative",
             zIndex: 1,
             flex: 1,
+            minHeight: 0,
             overflowY: "auto",
             padding: "8px 0",
             boxSizing: "border-box",
@@ -1206,6 +1216,7 @@ export default function ChatPage() {
               >
                 {!isUser ? (
                   <div
+                    onClick={() => setShowContactDetail(true)}
                     style={{
                       width: 42, height: 42, flexShrink: 0,
                       borderRadius: "50%",
@@ -1214,9 +1225,14 @@ export default function ChatPage() {
                       fontSize: "20px",
                       marginRight: 10,
                       alignSelf: "flex-start",
+                      cursor: "pointer",
+                      overflow: "hidden",
                     }}
                   >
-                    {message.avatar === "星" ? "⭐" : message.avatar}
+                    {contactAvatarUrl
+                      ? <img src={contactAvatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                      : (message.avatar === "星" ? "⭐" : message.avatar)
+                    }
                   </div>
                 ) : (
                   <div style={{ width: 6, flexShrink: 0 }} />
@@ -2090,7 +2106,87 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* ===== 联系人资料页 ===== */}
+        {/* ===== 联系人详情页（点头像进入，微信风格） ===== */}
+        {showContactDetail && (
+          <div style={{
+            position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+            background: "#fff", zIndex: 203,
+            display: "flex", flexDirection: "column", overflowY: "auto",
+          }}>
+            {/* 顶部导航 */}
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "14px 16px", position: "sticky", top: 0,
+              background: "#fff", zIndex: 1,
+            }}>
+              <div onClick={() => setShowContactDetail(false)} style={{ fontSize: "26px", color: "#222", cursor: "pointer", lineHeight: 1 }}>‹</div>
+              <div style={{ fontSize: "20px", color: "#555", cursor: "pointer" }}>···</div>
+            </div>
+
+            {/* 头像 + 名字 + 备注 */}
+            <div style={{ display: "flex", gap: "14px", padding: "10px 20px 20px", alignItems: "flex-start" }}>
+              <div style={{
+                width: "72px", height: "72px", borderRadius: "16px", flexShrink: 0,
+                background: contactAvatarUrl ? "transparent" : "linear-gradient(135deg, #c8dff0, #a0c4e8)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "30px", color: "#fff", fontWeight: 700, overflow: "hidden",
+              }}>
+                {contactAvatarUrl
+                  ? <img src={contactAvatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                  : contactName[0]
+                }
+              </div>
+              <div style={{ flex: 1, paddingTop: "4px" }}>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "#111", marginBottom: "4px" }}>
+                  {contactRemark || contactName}
+                </div>
+                {contactRemark && (
+                  <div style={{ fontSize: "13px", color: "#888", marginBottom: "4px" }}>
+                    昵称：{contactName}
+                  </div>
+                )}
+                {contactBio ? (
+                  <div style={{ fontSize: "13px", color: "#888" }}>{contactBio}</div>
+                ) : (
+                  <div style={{ fontSize: "13px", color: "#ccc", fontStyle: "italic" }}>暂无个性签名</div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ height: "8px", background: "#F0F2F5" }} />
+
+            {/* 动态占位 */}
+            <div style={{ padding: "14px 16px" }}>
+              <div style={{ fontSize: "15px", color: "#222", fontWeight: 600, marginBottom: "10px" }}>动态</div>
+              <div style={{
+                height: "80px", background: "#F0F2F5", borderRadius: "12px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#bbb", fontSize: "13px",
+              }}>
+                动态功能开发中
+              </div>
+            </div>
+
+            <div style={{ height: "8px", background: "#F0F2F5" }} />
+
+            {/* 底部按钮 */}
+            <div style={{ padding: "16px" }}>
+              <div
+                onClick={() => setShowContactDetail(false)}
+                style={{
+                  width: "100%", padding: "14px", textAlign: "center",
+                  background: "#fff", border: "1px solid #eee", borderRadius: "12px",
+                  fontSize: "16px", color: "#222", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                }}
+              >
+                💬 发消息
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== 联系人资料编辑页 ===== */}
         {showContactProfile && (
           <div style={{
             position: "fixed",
@@ -2168,39 +2264,36 @@ export default function ChatPage() {
                     }}
                   />
                   <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-                    <div
-                      onClick={() => setEditingRemark(false)}
-                      style={{
-                        flex: 1, textAlign: "center", padding: "10px",
-                        border: "1px solid #ddd", borderRadius: "8px",
-                        fontSize: "14px", color: "#555", cursor: "pointer",
-                      }}
-                    >取消</div>
-                    <div
-                      onClick={() => { setContactRemark(remarkInput); setEditingRemark(false); }}
-                      style={{
-                        flex: 1, textAlign: "center", padding: "10px",
-                        background: "#07c160", borderRadius: "8px",
-                        fontSize: "14px", color: "#fff", cursor: "pointer", fontWeight: 600,
-                      }}
-                    >保存</div>
+                    <div onClick={() => setEditingRemark(false)} style={{ flex: 1, textAlign: "center", padding: "10px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px", color: "#555", cursor: "pointer" }}>取消</div>
+                    <div onClick={() => { setContactRemark(remarkInput); setEditingRemark(false); }} style={{ flex: 1, textAlign: "center", padding: "10px", background: "#07c160", borderRadius: "8px", fontSize: "14px", color: "#fff", cursor: "pointer", fontWeight: 600 }}>保存</div>
                   </div>
                 </div>
               ) : (
-                <div
-                  onClick={() => { setRemarkInput(contactRemark); setEditingRemark(true); }}
-                  style={{
-                    padding: "16px", borderBottom: "1px solid rgba(0,0,0,0.06)",
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                    cursor: "pointer", fontSize: "15px", color: "#222",
-                  }}
-                >
-                  <span>编辑备注</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    {contactRemark && <span style={{ fontSize: "14px", color: "#aaa" }}>{contactRemark}</span>}
-                    <span style={{ color: "#bbb", fontSize: "18px" }}>›</span>
+                <>
+                  <div
+                    onClick={() => { setRemarkInput(contactRemark); setEditingRemark(true); }}
+                    style={{ padding: "16px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontSize: "15px", color: "#222" }}
+                  >
+                    <span>编辑备注</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {contactRemark && <span style={{ fontSize: "14px", color: "#aaa" }}>{contactRemark}</span>}
+                      <span style={{ color: "#bbb", fontSize: "18px" }}>›</span>
+                    </div>
                   </div>
-                </div>
+                  <div
+                    onClick={() => {
+                      const bio = prompt("编辑个性签名", contactBio);
+                      if (bio !== null) setContactBio(bio);
+                    }}
+                    style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontSize: "15px", color: "#222" }}
+                  >
+                    <span>个性签名</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {contactBio && <span style={{ fontSize: "14px", color: "#aaa", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{contactBio}</span>}
+                      <span style={{ color: "#bbb", fontSize: "18px" }}>›</span>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>
