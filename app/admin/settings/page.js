@@ -19,7 +19,11 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((d) => { setSettings(d.settings || {}); setLoading(false); });
+      .then((d) => { setSettings(d.settings || {}); setLoading(false); })
+      .catch((err) => {
+        console.error("加载设置失败:", err);
+        setLoading(false);
+      });
   }, []);
 
   const saveSetting = async (key, value) => {
