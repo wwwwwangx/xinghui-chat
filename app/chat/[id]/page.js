@@ -1994,6 +1994,24 @@ export default function ChatPage() {
                 <span style={{ color: "#bbb", fontSize: "18px" }}>›</span>
               </div>
 
+              {/* 新增书库管理入口 */}
+              <div
+                onClick={() => { setShowDetailMenu(false); router.push("/admin/books"); }}
+                style={{
+                  padding: "16px 16px",
+                  borderBottom: "1px solid rgba(0,0,0,0.06)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  color: "#222",
+                }}
+              >
+                <span>📚 书库管理</span>
+                <span style={{ color: "#bbb", fontSize: "18px" }}>›</span>
+              </div>
+
               <div
                 style={{
                   padding: "16px 16px",
