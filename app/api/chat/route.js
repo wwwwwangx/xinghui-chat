@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
-import { fetch as undiciFetch, Agent } from "undici";
 
 export const maxDuration = 60;
-
-const agent = new Agent({
-  headersTimeout: 55000,
-  bodyTimeout: 55000,
-  connectTimeout: 10000,
-});
+export const dynamic = 'force-dynamic';
 
 function splitAssistantReply(text) {
   if (!text) return [];
@@ -35,21 +29,21 @@ export async function POST(req) {
 
     let response;
     try {
-      response = await undiciFetch(gatewayUrl, {
+      response = await fetch(gatewayUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-        dispatcher: agent,
+        keepalive: true,
       });
     } catch (fetchErr) {
       console.error("Fetch error:", fetchErr.message);
-      return NextResponse.json({ error: "Failed to connect to gateway: " + fetchErr.message }, { status: 500 });
+      return NextResponse.json({ error: fetchErr.message }, { status: 500 });
     }
 
     let data = {};
     try {
       data = await response.json();
-    } catch (parseErr) {
+    } catch {
       return NextResponse.json({ error: "Gateway did not return valid JSON" }, { status: 500 });
     }
 
@@ -68,6 +62,7 @@ export async function POST(req) {
     }, { status: response.status });
 
   } catch (err) {
+    console.error("Unexpected error:", err.message);
     return NextResponse.json({ error: err.message || "Unknown error" }, { status: 500 });
   }
 }
