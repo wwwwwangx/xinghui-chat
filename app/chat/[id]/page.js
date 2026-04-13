@@ -34,6 +34,11 @@ export default function ChatPage() {
   const [contactAvatarUrl, setContactAvatarUrl] = useState(null);
   const contactAvatarInputRef = useRef(null);
 
+  // ===== 新增：书库相关 state =====
+  const [showBookSelector, setShowBookSelector] = useState(false);
+  const [currentBook, setCurrentBook] = useState(null);
+  const [bookSelectorList, setBookSelectorList] = useState([]);
+
   const chatEndRef = useRef(null);
   const photoInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -614,6 +619,16 @@ export default function ChatPage() {
     if (savedBio) setContactBio(savedBio);
   }, [chatId]);
 
+  // ===== 新增：读取 localStorage 中的当前在读书籍 =====
+  useEffect(() => {
+    const savedAvatar = localStorage.getItem(`contact_avatar_${chatId}`);
+    if (savedAvatar) setContactAvatarUrl(savedAvatar);
+    const savedBook = localStorage.getItem(`current_book_${chatId}`);
+    if (savedBook) {
+      try { setCurrentBook(JSON.parse(savedBook)); } catch(e) {}
+    }
+  }, [chatId]);
+
   useEffect(() => {
     localStorage.setItem("chat_favorites", JSON.stringify(favorites));
   }, [favorites]);
@@ -633,6 +648,37 @@ export default function ChatPage() {
   }, [contactAvatarUrl, chatId]);
 
   const visibleMessages = messages.slice(-displayCount);
+
+  // ===== 新增：书库相关函数 =====
+  const openBookSelector = async () => {
+    setShowDetailMenu(false);
+    const res = await fetch("/api/books");
+    const data = await res.json();
+    setBookSelectorList(Array.isArray(data) ? data : []);
+    setShowBookSelector(true);
+  };
+
+  const selectBook = (book) => {
+    setCurrentBook(book);
+    localStorage.setItem(`current_book_${chatId}`, JSON.stringify(book));
+    fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: `current_book_${chatId}`, value: String(book.id) }),
+    });
+    setShowBookSelector(false);
+  };
+
+  const clearBook = () => {
+    setCurrentBook(null);
+    localStorage.removeItem(`current_book_${chatId}`);
+    fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: `current_book_${chatId}`, value: "" }),
+    });
+    setShowBookSelector(false);
+  };
 
   return (
     <div
@@ -1977,6 +2023,31 @@ export default function ChatPage() {
 
             {/* 菜单列表 */}
             <div style={{ background: "#fff" }}>
+              {/* 新增：当前在读入口 */}
+              <div
+                onClick={openBookSelector}
+                style={{
+                  padding: "16px 16px",
+                  borderBottom: "1px solid rgba(0,0,0,0.06)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  color: "#222",
+                }}
+              >
+                <span>当前在读</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  {currentBook && (
+                    <span style={{ fontSize: "13px", color: "#07c160", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      《{currentBook.title}》
+                    </span>
+                  )}
+                  <span style={{ color: "#bbb", fontSize: "18px" }}>›</span>
+                </div>
+              </div>
+
               <div
                 onClick={() => { setShowDetailMenu(false); setShowSearchPanel(true); setSearchQuery(""); setSearchTab("text"); }}
                 style={{
@@ -2303,7 +2374,10 @@ export default function ChatPage() {
                   const file = e.target.files?.[0];
                   if (file) {
                     const reader = new FileReader();
-                    reader.onload = (ev) => setContactAvatarUrl(ev.target.result);
+                    reader.onload = (ev) => {
+                      setContactAvatarUrl(ev.target.result);
+                      localStorage.setItem(`contact_avatar_${chatId}`, ev.target.result);
+                    };
                     reader.readAsDataURL(file);
                   }
                   e.target.value = "";
@@ -2362,6 +2436,66 @@ export default function ChatPage() {
               )}
             </div>
           </div>
+        )}
+
+        {/* ===== 选书弹窗 ===== */}
+        {showBookSelector && (
+          <>
+            <div
+              onClick={() => setShowBookSelector(false)}
+              style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 300 }}
+            />
+            <div style={{
+              position: "fixed", left: 0, right: 0, bottom: 0,
+              background: "#fff", borderRadius: "20px 20px 0 0",
+              padding: "16px 16px 40px", zIndex: 301,
+              boxShadow: "0 -8px 30px rgba(0,0,0,0.12)", maxHeight: "70vh",
+              display: "flex", flexDirection: "column",
+            }}>
+              <div style={{ width: "40px", height: "4px", background: "#e0e0e0", borderRadius: "999px", margin: "0 auto 16px" }} />
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "#222", marginBottom: "12px" }}>选择当前在读的书</div>
+
+              <div style={{ overflowY: "auto", flex: 1 }}>
+                {currentBook && (
+                  <div
+                    onClick={clearBook}
+                    style={{
+                      padding: "12px 14px", borderRadius: "10px", marginBottom: "8px",
+                      background: "#fff5f5", border: "1px solid #fca5a5",
+                      fontSize: "14px", color: "#ef4444", cursor: "pointer", textAlign: "center",
+                    }}
+                  >
+                    清除当前选择（《{currentBook.title}》）
+                  </div>
+                )}
+                {bookSelectorList.length === 0 ? (
+                  <div style={{ textAlign: "center", color: "#aaa", padding: "40px 0" }}>
+                    书库里还没有书，先去上传一本吧
+                  </div>
+                ) : (
+                  bookSelectorList.map(book => (
+                    <div
+                      key={book.id}
+                      onClick={() => selectBook(book)}
+                      style={{
+                        padding: "14px", borderRadius: "10px", marginBottom: "8px",
+                        background: currentBook?.id === book.id ? "#f0fdf4" : "#f8f8f8",
+                        border: currentBook?.id === book.id ? "1px solid #07c160" : "1px solid transparent",
+                        cursor: "pointer",
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: "15px", fontWeight: 600, color: "#222" }}>《{book.title}》</div>
+                        {book.author && <div style={{ fontSize: "12px", color: "#888", marginTop: "2px" }}>{book.author}</div>}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#aaa" }}>{book.total_paragraphs} 段</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
