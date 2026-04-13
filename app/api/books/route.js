@@ -1,30 +1,54 @@
 import { NextResponse } from "next/server";
 
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 const BACKEND = process.env.NEXT_PUBLIC_API_URL || "https://wangxandxing.zeabur.app";
 
-export const maxDuration = 60; // 延长超时时间至 60 秒，适合大文件上传
-
 export async function GET() {
-  const res = await fetch(`${BACKEND}/books`);
-  const data = await res.json();
-  return NextResponse.json(data);
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(`${BACKEND}/books`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const data = await res.json();
+    return NextResponse.json(Array.isArray(data) ? data : []);
+  } catch (e) {
+    console.error("[GET /api/books] 失败:", e.message);
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 }
 
 export async function POST(req) {
-  // 使用 text() 直接获取原始请求体，避免 Next.js 重新解析大 JSON 造成内存压力或限制
-  const rawBody = await req.text();
-  const res = await fetch(`${BACKEND}/books/upload`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: rawBody,
-  });
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  try {
+    const rawBody = await req.text();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
+    const res = await fetch(`${BACKEND}/books/upload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: rawBody,
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (e) {
+    console.error("[POST /api/books] 失败:", e.message);
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 }
 
 export async function DELETE(req) {
-  const { id } = await req.json();
-  const res = await fetch(`${BACKEND}/books/${id}`, { method: "DELETE" });
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  try {
+    const { id } = await req.json();
+    const res = await fetch(`${BACKEND}/books/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
 }

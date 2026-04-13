@@ -1,8 +1,13 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
     serverActions: {
-      bodySizeLimit: '50mb',   // 允许上传最大 50MB 的请求体
+      bodySizeLimit: '50mb',
+    },
+  },
+  // 加这个：
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
     },
   },
 };
