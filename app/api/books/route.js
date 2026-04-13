@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 const BACKEND = process.env.NEXT_PUBLIC_API_URL || "https://wangxandxing.zeabur.app";
 
+export const maxDuration = 60; // 延长超时时间至 60 秒，适合大文件上传
+
 export async function GET() {
   const res = await fetch(`${BACKEND}/books`);
   const data = await res.json();
@@ -9,11 +11,12 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const body = await req.json();
+  // 使用 text() 直接获取原始请求体，避免 Next.js 重新解析大 JSON 造成内存压力或限制
+  const rawBody = await req.text();
   const res = await fetch(`${BACKEND}/books/upload`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: rawBody,
   });
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });
