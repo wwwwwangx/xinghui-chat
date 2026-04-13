@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export const maxDuration = 60;
+export const maxDuration = 120; // 延长到 120 秒，匹配 POST 超时
 export const dynamic = 'force-dynamic';
 
 const BACKEND = process.env.NEXT_PUBLIC_API_URL || "https://wangxandxing.zeabur.app";
@@ -8,7 +8,7 @@ const BACKEND = process.env.NEXT_PUBLIC_API_URL || "https://wangxandxing.zeabur.
 export async function GET() {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 30000); // GET 改 30 秒
     const res = await fetch(`${BACKEND}/books`, {
       cache: 'no-store',
       signal: controller.signal,
@@ -26,7 +26,7 @@ export async function POST(req) {
   try {
     const rawBody = await req.text();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 55000);
+    const timeout = setTimeout(() => controller.abort(), 120000); // POST 改 120 秒
     const res = await fetch(`${BACKEND}/books/upload`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
