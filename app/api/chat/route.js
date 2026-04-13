@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
+import { fetch as undiciFetch, Agent } from "undici";
 
 export const maxDuration = 60;
+
+const agent = new Agent({
+  headersTimeout: 55000,
+  bodyTimeout: 55000,
+  connectTimeout: 10000,
+});
 
 function splitAssistantReply(text) {
   if (!text) return [];
@@ -17,15 +24,6 @@ function extractTag(text, tagName) {
   return match ? match[1].trim() : "";
 }
 
-function parseTaggedResponse(rawText) {
-  const text = String(rawText || "").trim();
-  return {
-    reply: extractTag(text, "reply"),
-    thoughtSummary: extractTag(text, "thoughtSummary"),
-    thoughtFull: extractTag(text, "thoughtFull"),
-  };
-}
-
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -37,45 +35,36 @@ export async function POST(req) {
 
     let response;
     try {
-      response = await fetch(gatewayUrl, {
+      response = await undiciFetch(gatewayUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        dispatcher: agent,
       });
     } catch (fetchErr) {
-      console.error("Fetch error:", fetchErr);
-      return NextResponse.json({ error: "Failed to connect to gateway" }, { status: 500 });
+      console.error("Fetch error:", fetchErr.message);
+      return NextResponse.json({ error: "Failed to connect to gateway: " + fetchErr.message }, { status: 500 });
     }
 
     let data = {};
     try {
       data = await response.json();
     } catch (parseErr) {
-      console.error("Gateway JSON parse error:", parseErr);
       return NextResponse.json({ error: "Gateway did not return valid JSON" }, { status: 500 });
     }
 
     if (!response.ok) {
-      console.error("Gateway error:", response.status, data);
       return NextResponse.json(data, { status: response.status });
     }
 
-    const rawText =
-      data?.choices?.[0]?.message?.content ||
-      data?.content || "";
-
-    const parsed = parseTaggedResponse(rawText);
-    const reply = parsed.reply || rawText || "";
-    const thoughtSummary = parsed.thoughtSummary || "他刚刚在想点什么";
-    const thoughtFull = parsed.thoughtFull || "……";
+    const rawText = data?.choices?.[0]?.message?.content || data?.content || "";
+    const reply = extractTag(rawText, "reply") || rawText || "";
+    const thoughtSummary = extractTag(rawText, "thoughtSummary") || "他刚刚在想点什么";
+    const thoughtFull = extractTag(rawText, "thoughtFull") || "……";
     const replies = splitAssistantReply(reply);
 
     return NextResponse.json({
-      ...data,
-      reply,
-      replies,
-      thoughtSummary,
-      thoughtFull,
+      ...data, reply, replies, thoughtSummary, thoughtFull,
     }, { status: response.status });
 
   } catch (err) {
