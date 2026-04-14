@@ -65,7 +65,9 @@ export default function BooksAdminPage() {
     const timer3 = setTimeout(() => { setProgress(75); setProgressText("生成语义向量…"); }, 3000);
 
     try {
-      const res = await fetch("/api/books", {
+      // 直接调用后端接口，绕过 Next.js 的请求体大小限制
+      const BACKEND = process.env.NEXT_PUBLIC_API_URL || "https://wangxandxing.zeabur.app";
+      const res = await fetch(`${BACKEND}/books/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: title.trim(), author: author.trim(), content: content.trim() }),
