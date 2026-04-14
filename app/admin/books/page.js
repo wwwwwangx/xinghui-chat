@@ -17,6 +17,7 @@ export default function BooksAdminPage() {
   const [msgType, setMsgType] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const fileRef = useRef();
+  const fileObjRef = useRef(null); // 新增：存储文件对象，避免大内容进 state
 
   const fetchBooks = async () => {
     setLoading(true);
@@ -36,24 +37,40 @@ export default function BooksAdminPage() {
     const file = e.target.files[0];
     if (!file) return;
     setFileName(file.name);
+    fileObjRef.current = file; // 只存文件引用，不读内容
     if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
-    const reader = new FileReader();
-    reader.onload = (ev) => setContent(ev.target.result);
-    reader.onerror = () => {
-      // GBK fallback
-      const r2 = new FileReader();
-      r2.onload = (ev2) => setContent(ev2.target.result);
-      r2.readAsText(file, "GBK");
-    };
-    reader.readAsText(file, "UTF-8");
+    setContent(""); // 清空粘贴框
   };
 
   const handleUpload = async () => {
-    if (!title.trim() || !content.trim()) {
-      setMsg("书名和正文不能为空");
+    if (!title.trim()) {
+      setMsg("书名不能为空");
       setMsgType("err");
       return;
     }
+
+    // 优先使用文件内容，否则使用粘贴内容
+    let finalContent = content.trim();
+    if (fileObjRef.current) {
+      finalContent = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target.result);
+        reader.onerror = () => {
+          const r2 = new FileReader();
+          r2.onload = (ev2) => resolve(ev2.target.result);
+          r2.onerror = reject;
+          r2.readAsText(fileObjRef.current, "GBK");
+        };
+        reader.readAsText(fileObjRef.current, "UTF-8");
+      });
+    }
+
+    if (!finalContent) {
+      setMsg("请选择文件或粘贴内容");
+      setMsgType("err");
+      return;
+    }
+
     setUploading(true);
     setProgress(10);
     setProgressText("解析段落中…");
@@ -70,7 +87,7 @@ export default function BooksAdminPage() {
       const res = await fetch(`${BACKEND}/books/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), author: author.trim(), content: content.trim() }),
+        body: JSON.stringify({ title: title.trim(), author: author.trim(), content: finalContent }),
       });
       const data = await res.json();
       clearTimeout(timer1); clearTimeout(timer2); clearTimeout(timer3);
@@ -81,6 +98,7 @@ export default function BooksAdminPage() {
         setMsgType("ok");
         setMsg(`《${data.title}》上传成功，共 ${data.total_paragraphs} 段`);
         setTitle(""); setAuthor(""); setContent(""); setFileName("");
+        fileObjRef.current = null;
         if (fileRef.current) fileRef.current.value = "";
         setTimeout(() => {
           setShowUpload(false);
