@@ -52,7 +52,9 @@ export async function POST(req) {
       return NextResponse.json(data, { status: response.status });
     }
 
-    const rawText = data?.choices?.[0]?.message?.content || data?.content || "";
+    let rawText = data?.choices?.[0]?.message?.content || data?.content || "";
+    // 过滤掉思考链
+    rawText = rawText.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "").trim();
     const reply = extractTag(rawText, "reply") || rawText || "";
     const thoughtSummary = extractTag(rawText, "thoughtSummary") || "他刚刚在想点什么";
     const thoughtFull = extractTag(rawText, "thoughtFull") || "……";
