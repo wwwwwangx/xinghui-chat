@@ -578,6 +578,28 @@ export default function ChatPage() {
       .finally(() => setMessagesLoaded(true));
   }, [chatId]);
 
+  // 轮询：每30秒检查一次有没有小克主动发的新消息
+  useEffect(() => {
+    if (!messagesLoaded) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/messages?session_id=${chatId}`);
+        const data = await res.json();
+        if (!Array.isArray(data.messages)) return;
+        const latest = data.messages.slice(-100);
+        setMessages(prev => {
+          if (latest.length > prev.length) {
+            return latest;
+          }
+          return prev;
+        });
+      } catch (e) {
+        // 静默失败，不影响页面
+      }
+    }, 30000); // 30秒一次
+    return () => clearInterval(interval);
+  }, [chatId, messagesLoaded]);
+
   // 保存消息到数据库（剥掉 base64 图片数据，只保留文字）
   const sanitizeForDB = (msgs) => msgs.map(msg => {
     if (msg.images?.length > 0) {
