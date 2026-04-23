@@ -39,6 +39,39 @@ export default function ChatPage() {
   const [currentBook, setCurrentBook] = useState(null);
   const [bookSelectorList, setBookSelectorList] = useState([]);
 
+  // ===== Web Push：注册 Service Worker 并订阅推送 =====
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const VAPID_PUBLIC_KEY = 'BDRD1CkR192JIjPFUG5BK8Cf3THY5lm2tIIcQ3Cb5vo6WX7ShdXm1RpSg9ZHRb0dDbZRiT-gKMUMh2p57QGV-gc';
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      return new Uint8Array([...rawData].map(c => c.charCodeAt(0)));
+    }
+
+    navigator.serviceWorker.register('/sw.js').then(async (reg) => {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+      }
+
+      await fetch('/api/push-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), session_id: chatId }),
+      });
+    }).catch(err => console.error('SW注册失败:', err));
+  }, [chatId]);
+
   const chatEndRef = useRef(null);
   const photoInputRef = useRef(null);
   const cameraInputRef = useRef(null);
