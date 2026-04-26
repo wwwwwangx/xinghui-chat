@@ -134,6 +134,8 @@ export default function SettingsPage() {
       const MODEL_OPTIONS = [
         { label: "Claude Sonnet 4.6（聊天主力）", value: "claude-sonnet-4-6" },
         { label: "Claude Haiku 4.5（轻量快速）", value: "claude-haiku-4-5-20251001" },
+        { label: "DeepSeek V3.2（记忆/总结推荐）", value: "deepseek-v3.2" },
+        { label: "DeepSeek V3（稳定经典）", value: "deepseek-v3" },
       ];
       const modelConfigs = [
         { key: "default_model", title: "聊天模型", desc: "用于正常对话回复，建议使用 Sonnet" },
